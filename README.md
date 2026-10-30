@@ -62,12 +62,13 @@ cp wrangler.example.jsonc wrangler.local.jsonc
 
 > `wrangler.local.jsonc` 已在 `.gitignore` 里，不会被提交。
 
-### 4. 建表 + 初始化后台菜单
+### 4. 建表
 
 ```bash
 pnpm db:remote        # 建表（schema.sql）
-pnpm db:seed:remote   # 后台菜单 / 快捷入口（不加这步后台没有侧边栏）
 ```
+
+表结构是全部配置的来源；后台菜单由 SPA 内置，不需要额外数据。
 
 > ⚠️ 必须带 `--remote`（脚本里已经带了）。不带的话只初始化本地模拟库，线上仍然是空的。
 
@@ -203,7 +204,7 @@ pnpm check:leak    # 提交前自检：确认没把真实域名 / 密钥写进�
 本地库初始化：
 
 ```bash
-pnpm db:local && pnpm db:seed:local
+pnpm db:local
 ```
 
 目录结构：
@@ -216,7 +217,7 @@ src/
   templates/pay.ts       支付页（内联样式，无外部 CSS 依赖）
 public/                 构建产物与静态图，随 Worker 一起发布
 schema.sql              D1 表结构
-seed.sql                后台菜单与快捷入口（结构型数据）
+seed.sql                预留的种子数据入口（当前为空）
 wrangler.example.jsonc  配置模板（复制成 wrangler.local.jsonc 再填）
 ```
 
