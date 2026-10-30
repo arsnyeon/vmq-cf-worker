@@ -57,7 +57,7 @@ export interface Column<T> {
 export interface CrudConfig<T extends { id: number }> {
   title: string;
   description?: string;
-  /** e.g. '/quicks' */
+  /** e.g. '/admins' */
   endpoint: string;
   columns: Column<T>[];
   fields: Field[];

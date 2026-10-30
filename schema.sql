@@ -127,20 +127,6 @@ CREATE TABLE IF NOT EXISTS admins (
   login_time    INTEGER NOT NULL DEFAULT 0
 );
 
--- 快捷入口（后台首页用）
--- 快捷入口。列名沿用原版（没有 pid / target 两个字段）
-CREATE TABLE IF NOT EXISTS quicks (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  sort        INTEGER NOT NULL DEFAULT 0,
-  title       TEXT    NOT NULL DEFAULT '',
-  icon        TEXT    NOT NULL DEFAULT '',
-  href        TEXT    NOT NULL DEFAULT '',  -- 形如 system.passage/index（点号）
-  remark      TEXT    NOT NULL DEFAULT '',
-  status      INTEGER NOT NULL DEFAULT 1,
-  create_time INTEGER NOT NULL DEFAULT 0,
-  update_time INTEGER NOT NULL DEFAULT 0
-);
-
 -- 操作日志
 CREATE TABLE IF NOT EXISTS logs (
   id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -180,10 +166,3 @@ INSERT OR IGNORE INTO config (k, v) VALUES
   ('notify_max_attempts', '8'),
   ('DEBUG_PAGE', '0'),
   ('jkstate', '0');
-
--- 默认快捷入口（后台首页）
-INSERT OR IGNORE INTO quicks (id, sort, title, icon, href, remark, status, create_time)
-VALUES
-  (1, 1, '订单管理', 'fa fa-credit-card', '/admin/system/order/index', '查看与补单', 1, 0),
-  (2, 2, '通道管理', 'fa fa-qrcode', '/admin/system/passage/index', '收款码与在线状态', 1, 0),
-  (3, 3, '系统配置', 'fa fa-cog', '/admin/system/config/edit', '站点与密钥', 1, 0);
