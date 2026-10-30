@@ -18,6 +18,7 @@ import {
 } from '@/components/ui/table';
 import { EmptyRow, PageHeader, Panel, Pagination, Toolbar } from '@/components/page-shell';
 import { ConfirmDialog } from '@/components/confirm-dialog';
+import { QrCodeField } from '@/components/qr-code-field';
 import { api, ApiError } from '@/lib/api';
 
 interface QrcodeRow {
@@ -252,7 +253,9 @@ export function QrcodesPage() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>所属通道</Label>
+                  <Label>
+                    所属通道 <span className="text-destructive">*</span>
+                  </Label>
                   <Select value={form.pid} onValueChange={(v) => setForm({ ...form, pid: v })}>
                     <SelectTrigger>
                       <SelectValue placeholder="选择通道" />
@@ -260,41 +263,42 @@ export function QrcodesPage() {
                     <SelectContent>
                       {(options.data ?? []).map((o) => (
                         <SelectItem key={o.id} value={String(o.id)}>
-                          {`#${o.id} ${o.type}${o.remarks ? ` · ${o.remarks}` : ''}`}
+                          {`通道 #${o.id} · ${o.type}${o.remarks ? ` · ${o.remarks}` : ''}`}
                         </SelectItem>
                       ))}
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">下单时按「通道 + 金额」精确命中。</p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="money">金额</Label>
+                  <Label htmlFor="money">
+                    固定金额 <span className="text-destructive">*</span>
+                  </Label>
                   <Input
                     id="money"
                     inputMode="decimal"
-                    placeholder="18.00"
+                    placeholder="请输入固定金额，如 18.00"
                     value={form.money}
                     onChange={(e) => setForm({ ...form, money: e.target.value })}
                   />
+                  <p className="text-xs text-muted-foreground">最多两位小数，例如 18 或 18.50。</p>
                 </div>
               </div>
+
+              <QrCodeField
+                id="ewm"
+                label="收款码地址"
+                required
+                value={form.ewm}
+                onChange={(v) => setForm({ ...form, ewm: v })}
+                placeholder="上传图片自动解码，或直接粘贴 wxp://… / https://qr.alipay.com/…"
+                hint="上传收款码截图会解码成地址存起来；解码失败可到 cli.im/deqr 手动解码后粘贴。"
+              />
+
               <div className="space-y-1.5">
-                <Label htmlFor="ewm">收款码</Label>
-                <textarea
-                  id="ewm"
-                  className="min-h-16 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  value={form.ewm}
-                  onChange={(e) => setForm({ ...form, ewm: e.target.value })}
-                />
-                {form.ewm ? (
-                  <img
-                    src={qrSrc(form.ewm)}
-                    alt="预览"
-                    className="size-20 rounded-md border border-border bg-white object-contain p-1"
-                  />
-                ) : null}
-              </div>
-              <div className="space-y-1.5">
-                <Label>状态</Label>
+                <Label>
+                  状态 <span className="text-destructive">*</span>
+                </Label>
                 <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
                   <SelectTrigger>
                     <SelectValue />

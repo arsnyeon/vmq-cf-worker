@@ -4,6 +4,7 @@ import { CheckCircle2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -165,20 +166,23 @@ export function ConfigPage() {
                         )
                       ) : null}
                     </div>
-                    <Input
-                      id={f.name}
-                      type={f.secret ? 'password' : 'text'}
-                      autoComplete="new-password"
-                      placeholder={
-                        f.secret
-                          ? secretSet[f.name]
-                            ? '已配置，留空保存即保持不变'
-                            : '未配置，填入后保存生效'
-                          : ''
-                      }
-                      value={values[f.name] ?? ''}
-                      onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
-                    />
+                    {f.secret ? (
+                      <PasswordInput
+                        id={f.name}
+                        autoComplete="new-password"
+                        placeholder={
+                          secretSet[f.name] ? '已配置，留空保存即保持不变' : '未配置，填入后保存生效'
+                        }
+                        value={values[f.name] ?? ''}
+                        onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+                      />
+                    ) : (
+                      <Input
+                        id={f.name}
+                        value={values[f.name] ?? ''}
+                        onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+                      />
+                    )}
                     {f.hint ? <p className="text-xs text-muted-foreground">{f.hint}</p> : null}
                   </div>
                 ))}

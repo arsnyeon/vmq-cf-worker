@@ -1,6 +1,6 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { ImagePlus, Loader2, Plus, QrCode, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { Plus, QrCode, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,8 +19,8 @@ import {
 import { EmptyRow, PageHeader, Panel, Pagination, Toolbar } from '@/components/page-shell';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DateRangePicker } from '@/components/date-range-picker';
-import { api, ApiError, uploadImage } from '@/lib/api';
-import { decodeQrFile } from '@/lib/qr-decode';
+import { QrCodeField } from '@/components/qr-code-field';
+import { api, ApiError } from '@/lib/api';
 
 interface PassageRow {
   id: number;
@@ -110,54 +110,6 @@ export function PassagesPage() {
     open: false,
     title: '',
   });
-
-  // 收款码上传：一条走「解码 → 填文本」，一条走「原图上传 → 填地址」
-  const qrFileRef = useRef<HTMLInputElement>(null);
-  const imgFileRef = useRef<HTMLInputElement>(null);
-  const [qrBusy, setQrBusy] = useState(false);
-  const MAX_IMG = Math.floor(1.4 * 1024 * 1024);
-
-  async function pickQrFile(file: File) {
-    if (!form) return;
-    if (file.size > MAX_IMG) {
-      toast.error(`图片不能超过 ${(MAX_IMG / 1048576).toFixed(1)}MB`);
-      return;
-    }
-    setQrBusy(true);
-    try {
-      const text = await decodeQrFile(file);
-      if (!text) {
-        toast.error('没识别出二维码，换张更清晰的图，或到 cli.im/deqr 解码后粘贴');
-        return;
-      }
-      setForm({ ...form, ewm: text, ewm_type: '0' });
-      toast.success('已识别二维码内容并填入');
-    } catch {
-      toast.error('图片解析失败，请换一张重试');
-    } finally {
-      setQrBusy(false);
-      if (qrFileRef.current) qrFileRef.current.value = '';
-    }
-  }
-
-  async function pickImageFile(file: File) {
-    if (!form) return;
-    if (file.size > MAX_IMG) {
-      toast.error(`图片不能超过 ${(MAX_IMG / 1048576).toFixed(1)}MB`);
-      return;
-    }
-    setQrBusy(true);
-    try {
-      const url = await uploadImage(file);
-      setForm({ ...form, ewm: url, ewm_type: '1' });
-      toast.success('图片已上传');
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : '上传失败');
-    } finally {
-      setQrBusy(false);
-      if (imgFileRef.current) imgFileRef.current.value = '';
-    }
-  }
 
   const query = useQuery({
     queryKey: ['passages', page, filters],
@@ -603,66 +555,19 @@ export function PassagesPage() {
                 </p>
               </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="ewm">无金额收款码</Label>
-                <textarea
-                  id="ewm"
-                  className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="上传图片自动解码，或直接粘贴 wxp://… / https://qr.alipay.com/…"
-                  value={form.ewm}
-                  onChange={(e) => setForm({ ...form, ewm: e.target.value })}
-                />
-                <div className="flex flex-wrap items-center gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={qrBusy}
-                    onClick={() => qrFileRef.current?.click()}
-                  >
-                    {qrBusy ? <Loader2 className="animate-spin" /> : <QrCode />} 上传图片并解码
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    disabled={qrBusy}
-                    onClick={() => imgFileRef.current?.click()}
-                  >
-                    <ImagePlus /> 上传为图片
-                  </Button>
-                  {form.ewm ? (
-                    <img
-                      src={qrSrc(form.ewm)}
-                      alt="收款码预览"
-                      className="size-16 rounded-md border border-border bg-white object-contain p-1"
-                    />
-                  ) : null}
-                </div>
-                <input
-                  ref={qrFileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void pickQrFile(f);
-                  }}
-                />
-                <input
-                  ref={imgFileRef}
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const f = e.target.files?.[0];
-                    if (f) void pickImageFile(f);
-                  }}
-                />
-                <p className="text-xs text-muted-foreground">
-                  解码失败多半是图太糊或被压缩过，可到 cli.im/deqr 手动解码后粘贴；数字人民币请用「无限制时长」的收款码。
-                </p>
-              </div>
+              <QrCodeField
+                id="ewm"
+                label="无金额收款码"
+                value={form.ewm}
+                onChange={(v) => setForm({ ...form, ewm: v, ewm_type: '0' })}
+                onImage={(url) => setForm({ ...form, ewm: url, ewm_type: '1' })}
+                placeholder="上传图片自动解码，或直接粘贴 wxp://… / https://qr.alipay.com/…"
+                hint={
+                  <>
+                    解码失败多半是图太糊或被压缩过，可到 cli.im/deqr 手动解码后粘贴；数字人民币请用「无限制时长」的收款码。
+                  </>
+                }
+              />
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">

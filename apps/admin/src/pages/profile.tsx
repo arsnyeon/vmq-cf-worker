@@ -4,6 +4,7 @@ import { KeyRound, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageHeader } from '@/components/page-shell';
@@ -122,9 +123,8 @@ export function ProfilePage() {
           <CardContent className="space-y-4">
             <div className="space-y-1.5">
               <Label htmlFor="pw1">新密码</Label>
-              <Input
+              <PasswordInput
                 id="pw1"
-                type="password"
                 autoComplete="new-password"
                 value={pw.password}
                 onChange={(e) => setPw((p) => ({ ...p, password: e.target.value }))}
@@ -133,9 +133,8 @@ export function ProfilePage() {
             </div>
             <div className="space-y-1.5">
               <Label htmlFor="pw2">确认新密码</Label>
-              <Input
+              <PasswordInput
                 id="pw2"
-                type="password"
                 autoComplete="new-password"
                 value={pw.password_again}
                 onChange={(e) => setPw((p) => ({ ...p, password_again: e.target.value }))}

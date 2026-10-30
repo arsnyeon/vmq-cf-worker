@@ -13,6 +13,7 @@ import { Plus, RefreshCw, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -289,13 +290,22 @@ export function CrudPage<T extends { id: number }>({ config }: { config: CrudCon
                       onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}
                     />
                   ) : (
-                    <Input
-                      id={f.name}
-                      type={f.type === 'password' ? 'password' : f.type === 'number' ? 'number' : 'text'}
-                      placeholder={f.placeholder}
-                      value={form[f.name] ?? ''}
-                      onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}
-                    />
+                    f.type === 'password' ? (
+                      <PasswordInput
+                        id={f.name}
+                        placeholder={f.placeholder}
+                        value={form[f.name] ?? ''}
+                        onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}
+                      />
+                    ) : (
+                      <Input
+                        id={f.name}
+                        type={f.type === 'number' ? 'number' : 'text'}
+                        placeholder={f.placeholder}
+                        value={form[f.name] ?? ''}
+                        onChange={(e) => setForm({ ...form, [f.name]: e.target.value })}
+                      />
+                    )
                   )}
                   {f.hint ? <p className="text-xs text-muted-foreground">{f.hint}</p> : null}
                 </div>
