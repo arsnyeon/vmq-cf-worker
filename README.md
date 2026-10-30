@@ -27,7 +27,7 @@
 
 ### 0. 前置
 
-- [Node.js](https://nodejs.org/) 18+
+- [Node.js](https://nodejs.org/) 20+（package.json 的 engines 要求）
 - [Cloudflare 账号](https://dash.cloudflare.com/sign-up)（免费即可）
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-update/)：`npm i -g wrangler`
 - 一个监控端 App（见「监控端」一节）
@@ -78,7 +78,8 @@ pnpm db:remote        # 建表（schema.sql）
 pnpm deploy
 ```
 
-它会先同步静态资源、再部署 Worker。完成后会给你一个 `https://vmq.<你的子域>.workers.dev` 地址。
+它会先构建后台 SPA（`apps/admin`）与前台站点（`apps/web`），产物落到 `public/`，再随 Worker 一起上传。
+完成后会给你一个 `https://vmq.<你的子域>.workers.dev` 地址。
 
 ### 6. 初始化（关键一步）
 
