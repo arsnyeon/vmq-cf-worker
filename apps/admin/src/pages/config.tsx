@@ -44,18 +44,8 @@ const GROUPS: ConfigGroup[] = [
     ],
   },
   {
-    id: 'contact',
-    title: '联系方式',
-    fields: [
-      { name: 'phone', label: '电话' },
-      { name: 'qq', label: 'QQ' },
-      { name: 'weixin', label: '微信' },
-      { name: 'email', label: '邮箱' },
-    ],
-  },
-  {
     id: 'trade',
-    title: '交易',
+    title: '交易设置',
     fields: [
       { name: 'order_timeout', label: '订单超时（分钟）' },
       { name: 'home_url', label: '支付完成跳转' },
@@ -80,6 +70,16 @@ const GROUPS: ConfigGroup[] = [
       },
       { name: 'epayid_ali', label: '商户 ID' },
       { name: 'epayurl_ali', label: '支付网关地址' },
+    ],
+  },
+  {
+    id: 'contact',
+    title: '联系方式',
+    fields: [
+      { name: 'phone', label: '电话' },
+      { name: 'qq', label: 'QQ' },
+      { name: 'weixin', label: '微信' },
+      { name: 'email', label: '邮箱' },
     ],
   },
 ];
