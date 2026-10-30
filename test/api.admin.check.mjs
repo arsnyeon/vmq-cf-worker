@@ -228,7 +228,13 @@ try {
   console.log('\n=== 写入校验（通道） ===');
   const badPassage = await call('POST', '/passages', { type: 1 });
   check('缺收款码被拒', badPassage.json?.code === 0, badPassage.json?.msg ?? '');
-  const newPassage = await call('POST', '/passages', { type: 1, code: 0, ewm: 'wxp://API_TEST', remarks: 'API_TEST_MARK' });
+  const newPassage = await call('POST', '/passages', {
+    type: 1,
+    code: 0,
+    ewm: 'wxp://API_TEST',
+    zf_pid: '2088APITEST',
+    remarks: 'API_TEST_MARK',
+  });
   check('新增通道', newPassage.json?.code === 1, newPassage.json?.msg ?? '');
   const passages = await call('GET', '/passages?page=1&limit=50');
   const pr = (passages.json?.data ?? []).find((x) => x.remarks === 'API_TEST_MARK');
@@ -237,6 +243,8 @@ try {
       await call('DELETE', `/passages?id=${pr.id}`);
     });
     check('通道 old_type 保留数字', typeof pr.old_type === 'number', String(pr.old_type));
+    // 对齐旧版表单后新增的「支付用户ID」，保存后要能原样读回
+    check('支付用户ID 往返', pr.zf_pid === '2088APITEST', String(pr.zf_pid));
     // 列表筛选（对齐旧后台搜索行的字段）
     const flt1 = await call('GET', '/passages?page=1&limit=50&remarks=API_TEST_MARK');
     check('按备注筛选', flt1.json?.code === 0 && flt1.json?.count === 1, `count=${flt1.json?.count}`);

@@ -73,6 +73,26 @@ export const api = {
   del: <T>(path: string, body?: unknown) => request<T>('DELETE', path, body),
 };
 
+/**
+ * 上传一张图片，返回可直接访问的地址（`/upload/<hash>`）。
+ *
+ * 后端存在 D1 的 uploads 表里（base64），限额 1.4MB / png,jpg,gif,webp。
+ * 前端的体积预检只是提前给个提示，真正的限额以后端为准。
+ */
+export async function uploadImage(file: File): Promise<string> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch('/api/admin/upload', {
+    method: 'POST',
+    body: form,
+    credentials: 'same-origin',
+  });
+  const json = (await res.json()) as { code: number; msg: string; data?: { url: string } };
+  if (json.code !== 1 || !json.data?.url) throw new Error(json.msg || '上传失败');
+  return json.data.url;
+}
+
+
 /* ============================ 类型 ============================ */
 
 export interface Me {

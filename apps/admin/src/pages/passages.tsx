@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Plus, QrCode, RefreshCw, Search, Trash2 } from 'lucide-react';
+import { ImagePlus, Loader2, Plus, QrCode, RefreshCw, Search, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -19,8 +19,8 @@ import {
 import { EmptyRow, PageHeader, Panel, Pagination, Toolbar } from '@/components/page-shell';
 import { ConfirmDialog } from '@/components/confirm-dialog';
 import { DateRangePicker } from '@/components/date-range-picker';
-import { ImageUpload } from '@/components/image-upload';
-import { api, ApiError } from '@/lib/api';
+import { api, ApiError, uploadImage } from '@/lib/api';
+import { decodeQrFile } from '@/lib/qr-decode';
 
 interface PassageRow {
   id: number;
@@ -71,6 +71,7 @@ interface FormState {
   id: number;
   type: string;
   code: string;
+  zf_pid: string;
   ewm_type: string;
   ewm: string;
   remarks: string;
@@ -83,6 +84,7 @@ const EMPTY: FormState = {
   id: 0,
   type: '1',
   code: '0',
+  zf_pid: '',
   ewm_type: '0',
   ewm: '',
   remarks: '',
@@ -109,6 +111,54 @@ export function PassagesPage() {
     title: '',
   });
 
+  // 收款码上传：一条走「解码 → 填文本」，一条走「原图上传 → 填地址」
+  const qrFileRef = useRef<HTMLInputElement>(null);
+  const imgFileRef = useRef<HTMLInputElement>(null);
+  const [qrBusy, setQrBusy] = useState(false);
+  const MAX_IMG = Math.floor(1.4 * 1024 * 1024);
+
+  async function pickQrFile(file: File) {
+    if (!form) return;
+    if (file.size > MAX_IMG) {
+      toast.error(`图片不能超过 ${(MAX_IMG / 1048576).toFixed(1)}MB`);
+      return;
+    }
+    setQrBusy(true);
+    try {
+      const text = await decodeQrFile(file);
+      if (!text) {
+        toast.error('没识别出二维码，换张更清晰的图，或到 cli.im/deqr 解码后粘贴');
+        return;
+      }
+      setForm({ ...form, ewm: text, ewm_type: '0' });
+      toast.success('已识别二维码内容并填入');
+    } catch {
+      toast.error('图片解析失败，请换一张重试');
+    } finally {
+      setQrBusy(false);
+      if (qrFileRef.current) qrFileRef.current.value = '';
+    }
+  }
+
+  async function pickImageFile(file: File) {
+    if (!form) return;
+    if (file.size > MAX_IMG) {
+      toast.error(`图片不能超过 ${(MAX_IMG / 1048576).toFixed(1)}MB`);
+      return;
+    }
+    setQrBusy(true);
+    try {
+      const url = await uploadImage(file);
+      setForm({ ...form, ewm: url, ewm_type: '1' });
+      toast.success('图片已上传');
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : '上传失败');
+    } finally {
+      setQrBusy(false);
+      if (imgFileRef.current) imgFileRef.current.value = '';
+    }
+  }
+
   const query = useQuery({
     queryKey: ['passages', page, filters],
     queryFn: async () => {
@@ -124,6 +174,7 @@ export function PassagesPage() {
       const body = {
         type: f.type,
         code: f.code,
+        zf_pid: f.zf_pid,
         ewm_type: f.ewm_type,
         ewm: f.ewm,
         remarks: f.remarks,
@@ -488,7 +539,9 @@ export function PassagesPage() {
             <div className="space-y-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>支付方式</Label>
+                  <Label>
+                    支付模式 <span className="text-destructive">*</span>
+                  </Label>
                   <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
                     <SelectTrigger>
                       <SelectValue />
@@ -503,7 +556,9 @@ export function PassagesPage() {
                   </Select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>收款码模式</Label>
+                  <Label>
+                    通道模式 <span className="text-destructive">*</span>
+                  </Label>
                   <Select value={form.code} onValueChange={(v) => setForm({ ...form, code: v })}>
                     <SelectTrigger>
                       <SelectValue />
@@ -520,61 +575,93 @@ export function PassagesPage() {
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="ewm">收款码</Label>
+                <Label htmlFor="zf_pid">支付用户ID</Label>
+                <Input
+                  id="zf_pid"
+                  value={form.zf_pid}
+                  placeholder="选填"
+                  onChange={(e) => setForm({ ...form, zf_pid: e.target.value })}
+                />
+                <p className="text-xs text-muted-foreground">
+                  支付宝填 UID（2088 开头），监控端绑定要用；数字人民币填钱包编码（优先使用收款码）。留空则按收款码内容识别。
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>收款码类型</Label>
+                <Select value={form.ewm_type} onValueChange={(v) => setForm({ ...form, ewm_type: v })}>
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="0">二维码</SelectItem>
+                    <SelectItem value="1">赞赏码</SelectItem>
+                  </SelectContent>
+                </Select>
+                <p className="text-xs text-muted-foreground">
+                  二维码存的是解码后的地址，支付页按订单金额现场生成图；赞赏码存的是图片本身，支付页直接展示。
+                </p>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="ewm">无金额收款码</Label>
                 <textarea
                   id="ewm"
                   className="min-h-20 w-full rounded-md border border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  placeholder="粘贴收款码内容（wxp://… / https://qr.alipay.com/…）或图片地址"
+                  placeholder="上传图片自动解码，或直接粘贴 wxp://… / https://qr.alipay.com/…"
                   value={form.ewm}
                   onChange={(e) => setForm({ ...form, ewm: e.target.value })}
                 />
-                <div className="flex items-start gap-3 pt-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={qrBusy}
+                    onClick={() => qrFileRef.current?.click()}
+                  >
+                    {qrBusy ? <Loader2 className="animate-spin" /> : <QrCode />} 上传图片并解码
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={qrBusy}
+                    onClick={() => imgFileRef.current?.click()}
+                  >
+                    <ImagePlus /> 上传为图片
+                  </Button>
                   {form.ewm ? (
                     <img
                       src={qrSrc(form.ewm)}
                       alt="收款码预览"
-                      className="size-20 rounded-md border border-border bg-white object-contain p-1"
+                      className="size-16 rounded-md border border-border bg-white object-contain p-1"
                     />
                   ) : null}
-                  <ImageUpload
-                    value={isImageUrl(form.ewm) ? form.ewm : ''}
-                    onChange={(url) =>
-                      setForm({
-                        ...form,
-                        ewm: url || '',
-                        ewm_type: url ? '1' : '0',
-                      })
-                    }
-                    hint={
-                      isImageUrl(form.ewm)
-                        ? '当前使用上传的图片'
-                        : '也可以直接上传收款码截图'
-                    }
-                  />
                 </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-1.5">
-                  <Label htmlFor="remarks">备注</Label>
-                  <Input
-                    id="remarks"
-                    value={form.remarks}
-                    onChange={(e) => setForm({ ...form, remarks: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label>状态</Label>
-                  <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">启用</SelectItem>
-                      <SelectItem value="0">停用</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
+                <input
+                  ref={qrFileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void pickQrFile(f);
+                  }}
+                />
+                <input
+                  ref={imgFileRef}
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) void pickImageFile(f);
+                  }}
+                />
+                <p className="text-xs text-muted-foreground">
+                  解码失败多半是图太糊或被压缩过，可到 cli.im/deqr 手动解码后粘贴；数字人民币请用「无限制时长」的收款码。
+                </p>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -592,16 +679,46 @@ export function PassagesPage() {
                       <SelectItem value="1">需要</SelectItem>
                     </SelectContent>
                   </Select>
+                  <p className="text-xs text-muted-foreground">
+                    开启后支付宝订单会在支付页提示用户备注订单号。
+                  </p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>金额浮动</Label>
+                  <Label>区分方式</Label>
                   <Select value={form.pay_qf} onValueChange={(v) => setForm({ ...form, pay_qf: v })}>
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0">递增</SelectItem>
-                      <SelectItem value="1">递减</SelectItem>
+                      <SelectItem value="0">金额递增</SelectItem>
+                      <SelectItem value="1">金额递减</SelectItem>
+                    </SelectContent>
+                  </Select>
+                  <p className="text-xs text-muted-foreground">同一金额被占用时，下一单加/减多少分。</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="remarks">备注</Label>
+                  <Input
+                    id="remarks"
+                    placeholder="选填，仅后台可见"
+                    value={form.remarks}
+                    onChange={(e) => setForm({ ...form, remarks: e.target.value })}
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label>
+                    状态 <span className="text-destructive">*</span>
+                  </Label>
+                  <Select value={form.status} onValueChange={(v) => setForm({ ...form, status: v })}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">启用</SelectItem>
+                      <SelectItem value="0">停用</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -666,6 +783,7 @@ function toForm(r: PassageRow): FormState {
     id: r.id,
     type: String(r.old_type ?? 1),
     code: String(r.old_code ?? 0),
+    zf_pid: r.zf_pid ?? '',
     ewm_type: String(r.ewm_type ?? 0),
     ewm: r.ewm ?? '',
     remarks: r.remarks ?? '',
