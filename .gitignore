@@ -1,0 +1,29 @@
+node_modules
+.wrangler
+.dev.vars
+dev.vars
+*.sqlite
+.DS_Store
+_tmp_*
+
+# rsync 中断时留下的临时文件（形如 ..DS_Store.cOWkr2zknb）
+**/..*
+
+# 本地私有配置：含线上真实域名 / 数据库 ID / 别名，禁止进 git
+wrangler.local.jsonc
+
+# 从线上导出的真实种子数据（含通讯密钥、商户密钥）
+seed.local.sql
+
+# 泄露检查 / 模板脱敏用的私有规则（含真实域名）
+.private-rules.json
+
+# React 构建产物（apps/admin / apps/web 生成）
+public/console
+public/site
+
+# 生产数据快照（含密钥与密码哈希，绝不入库）
+.data
+
+# AI 助手的工作区记忆（本地工具产物）
+.workbuddy-ai/

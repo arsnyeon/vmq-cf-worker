@@ -1,0 +1,8 @@
+# 静态资源已随 Worker 发布，走 Cloudflare 边缘缓存。
+# 一天缓存：改资源后重新部署即生效（文件名不带 hash，别设 immutable）。
+/static/*
+  Cache-Control: public, max-age=86400
+  Access-Control-Allow-Origin: *
+
+/favicon.ico
+  Cache-Control: public, max-age=86400
