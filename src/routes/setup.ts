@@ -123,8 +123,20 @@ export async function handleSetup(req: Request, env: Env): Promise<Response> {
   // 已初始化（线上走这里）→ 一律 404，不暴露任何信息
   if (count > 0) return text('Not Found', 404);
 
-  // 配了 SETUP_TOKEN 就必须带对，否则当作不存在
-  if (token && (url.searchParams.get('token') ?? '') !== token) return text('Not Found', 404);
+  // 配了 SETUP_TOKEN 就必须带对，否则当作不存在。
+  // 令牌有两个来源：查询串（首次访问 `/setup?token=…`）与表单隐藏域（提交时）。
+  // 表单的 action 是 `/setup`，提交时**查询串会丢掉**，只剩 body 里的 token，
+  // 所以这里必须同时认 body —— 否则 POST 一律 404，表现就是「填完点提交没有反应」。
+  let provided = url.searchParams.get('token') ?? '';
+  if (!provided && req.method === 'POST') {
+    try {
+      // clone 一份来读，避免把原始 body 消耗掉
+      provided = String((await req.clone().formData()).get('token') ?? '');
+    } catch {
+      /* 解析失败留空，下面按未授权处理 */
+    }
+  }
+  if (token && provided !== token) return text('Not Found', 404);
 
   if (req.method === 'GET') return html(formPage(url.searchParams.get('token') ?? token));
 

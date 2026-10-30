@@ -15,25 +15,32 @@
   //   - 限额：20,000 个文件 / 单文件 25 MiB（免费版够用）
   //   - 换了前端素材后先 `pnpm sync:assets`（deploy 时会自动跑）
   "assets": {
-      "directory": "./public",
-      "binding": "ASSETS",
-      // 前台入口需要注入公开站点配置，后台入口需要隐藏别名；其余静态文件由边缘直接分发。
-      // 前台只认带 .html 的伪静态地址（无后缀的 /doc 之类不提供），列少了会先落 assets
-      // 再回落到 Worker，多一次无谓的查找。
-      "run_worker_first": [
-        "/", "/index.html",
-        "/doc.html", "/api.html", "/demo.html", "/result.html", "/chaorder.html",
-        "/console", "/console/", "/console/index.html"
-      ]
-    },
+    "directory": "./public",
+    "binding": "ASSETS",
+    // 前台入口需要注入公开站点配置，后台入口需要隐藏别名；其余静态文件由边缘直接分发。
+    // 前台只认带 .html 的伪静态地址（无后缀的 /doc 之类不提供），列少了会先落 assets
+    // 再回落到 Worker，多一次无谓的查找。
+    "run_worker_first": [
+      "/",
+      "/index.html",
+      "/doc.html",
+      "/api.html",
+      "/demo.html",
+      "/result.html",
+      "/chaorder.html",
+      "/console",
+      "/console/",
+      "/console/index.html",
+    ],
+  },
 
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "vmq",
       // ↓ 换成你自己创建出来的 id：wrangler d1 create vmq
-      "database_id": "<your-database-id>"
-    }
+      "database_id": "<your-database-id>",
+    },
   ],
 
   // 每分钟：关单 / 释放金额占位 / 回调重试 / 清理孤儿占位
@@ -43,11 +50,12 @@
   //   · 后台别名：首次部署后访问 /setup 填，存进 config 表
   //   · 通讯密钥：/setup 随机生成，后台「系统设置」可查看
   //   · 想用环境变量强制指定别名（优先级更高）：wrangler secret put ADMIN_ALIAS
-  "vars": {}
+  "vars": {},
 
   // 部署前必读：
   // 1) 监控端 App 请求的是 http://<host>/appPush，协议写死 http。
   //    若用自定义域名，务必【不要】开启 Always Use HTTPS，否则 POST 会被 302 丢 body。
   // 2) 绑定自定义域名：加 routes: [{ "pattern": "pay.example.com/*", "custom_domain": true }]
   // 3) 密钥类配置不要写在这里，用 `wrangler secret put`。
+  // 4) 想防别人抢先初始化，部署后立刻设 SETUP_TOKEN，再用 /setup?token=… 打开。
 }

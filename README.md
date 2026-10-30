@@ -94,6 +94,16 @@ pnpm deploy
 
 初始化完成后 `/setup` 自动关闭（再次访问返回 404）。
 
+> **防抢注（可选）**：部署完到点开 `/setup` 之间，任何人先访问就能占走管理员。
+> 想堵住这个窗口，先设一个初始化令牌：
+>
+> ```bash
+> npx wrangler secret put SETUP_TOKEN        # 随便一串只有你知道的值
+> ```
+>
+> 之后必须用 `/setup?token=<令牌>` 打开；表单里会自动带上令牌，提交不需要手动加。
+> 初始化完成后可以删掉：`npx wrangler secret delete SETUP_TOKEN`。
+
 ### 7. 后台配置
 
 登录 `/<别名>/login`：
