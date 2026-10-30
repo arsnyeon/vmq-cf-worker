@@ -61,6 +61,15 @@ cp wrangler.example.jsonc wrangler.local.jsonc
 把 `wrangler.local.jsonc` 里的 `<your-database-id>` 换成上一步的 id。
 
 > `wrangler.local.jsonc` 已在 `.gitignore` 里，不会被提交。
+>
+> **多个环境**（比如本地开发库一个账号、测试环境又一个账号）：把配置另存一份，
+> 用环境变量指定即可，不用来回改文件：
+>
+> ```bash
+> WRANGLER_CONFIG=wrangler.local.test.jsonc pnpm run deploy
+> ```
+>
+> 不指定就走默认的 `wrangler.local.jsonc`。
 
 ### 4. 建表
 
@@ -75,8 +84,11 @@ pnpm db:remote        # 建表（schema.sql）
 ### 5. 部署
 
 ```bash
-pnpm deploy
+pnpm run deploy
 ```
+
+> 必须写 `pnpm run deploy`：`pnpm deploy` 是 pnpm 自己的命令（用于 workspace 部署），
+> 会报 `ERR_PNPM_NOTHING_TO_DEPLOY`，不会执行本项目的脚本。
 
 它会先构建后台 SPA（`apps/admin`）与前台站点（`apps/web`），产物落到 `public/`，再随 Worker 一起上传。
 完成后会给你一个 `https://vmq.<你的子域>.workers.dev` 地址。

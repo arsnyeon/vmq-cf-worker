@@ -2,7 +2,7 @@
   // ============================================================
   // 配置模板 —— 复制成 wrangler.local.jsonc 后填写（后者已被 .gitignore 排除）
   //   cp wrangler.example.jsonc wrangler.local.jsonc
-  // 所有命令都要带上配置：pnpm deploy / pnpm dev 会自动找 wrangler.local.jsonc
+  // 所有命令都要带上配置：pnpm run deploy / pnpm dev 会自动找 wrangler.local.jsonc
   // ============================================================
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "vmq",

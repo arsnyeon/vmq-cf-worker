@@ -4,8 +4,22 @@
  * 仓库里只有 `wrangler.example.jsonc`（占位值），真实配置在 `wrangler.local.jsonc`
  * （含 database_id / 别名，已被 .gitignore 排除）。
  * 这样开源出去不会把线上的数据库 ID 和后台路径带进 git。
+ *
+ * 有多个环境（本地开发库 / 测试账号 / 正式账号）时，用环境变量显式指定：
+ *   WRANGLER_CONFIG=wrangler.local.newacc.jsonc pnpm deploy
+ * 不指定就走默认的 wrangler.local.jsonc。
  */
 import { existsSync } from 'node:fs';
+
+const explicit = process.env.WRANGLER_CONFIG;
+if (explicit) {
+  if (!existsSync(explicit)) {
+    console.error(`\nWRANGLER_CONFIG 指向的配置文件不存在：${explicit}\n`);
+    process.exit(1);
+  }
+  console.log(explicit);
+  process.exit(0);
+}
 
 if (existsSync('wrangler.local.jsonc')) {
   console.log('wrangler.local.jsonc');
