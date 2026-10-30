@@ -127,32 +127,6 @@ CREATE TABLE IF NOT EXISTS admins (
   login_time    INTEGER NOT NULL DEFAULT 0
 );
 
--- 后台菜单（字段名沿用原版语义，模板直接吃这些列）
-CREATE TABLE IF NOT EXISTS menus (
-  id          INTEGER PRIMARY KEY,
-  pid         INTEGER NOT NULL DEFAULT 0,   -- 0 = 一级导航
-  sort        INTEGER NOT NULL DEFAULT 0,
-  title       TEXT    NOT NULL DEFAULT '',
-  icon        TEXT    NOT NULL DEFAULT '',
-  href        TEXT    NOT NULL DEFAULT '',  -- 形如 system.passage/index，空 = 纯导航
-  target      TEXT    NOT NULL DEFAULT '_self',
-  remark      TEXT    NOT NULL DEFAULT '',
-  status      INTEGER NOT NULL DEFAULT 1,
-  create_time INTEGER NOT NULL DEFAULT 0,
-  update_time INTEGER NOT NULL DEFAULT 0
-);
-
--- 初始菜单：后台默认侧边栏
--- 定时任务（system.cron/index）按需求默认关闭；需要时把 status 改成 1 即可
-INSERT OR IGNORE INTO menus (id, pid, sort, title, icon, href, target, status) VALUES
-  (250, 0,   0, '系统管理', 'fa fa-cog',              '',                     '_self', 1),
-  (264, 250, 1, '通道管理', 'fa fa-archive',          'system.passage/index', '_self', 1),
-  (268, 250, 2, '订单管理', 'fa fa-first-order',      'system.order/index',   '_self', 1),
-  (266, 250, 3, '支付配置', 'fa fa-gratipay',         'system.pay/edit',      '_self', 1),
-  (267, 250, 4, '定时任务', 'fa fa-clock-o',          'system.cron/index',    '_self', 0),
-  (254, 250, 6, '配置管理', 'fa fa-asterisk',         'system.config/edit',   '_self', 1),
-  (260, 250, 7, '快捷入口', 'fa fa-arrow-circle-right','system.quick/index',  '_self', 1);
-
 -- 快捷入口（后台首页用）
 -- 快捷入口。列名沿用原版（没有 pid / target 两个字段）
 CREATE TABLE IF NOT EXISTS quicks (

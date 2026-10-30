@@ -37,21 +37,14 @@ import { listLogs, removeLogs } from '../modules/content/content.service';
 import {
   changePassword,
   listAdmins,
-  listMenus,
-  parentMenuOptions,
   removeAdmins,
-  removeMenus,
   saveAdmin,
   saveConfig,
   saveEpayConfig,
-  saveMenu,
   saveProfile,
   setAdminStatus,
-  setMenuStatus,
-  sortMenu,
 } from '../modules/system/system.service';
 import { allConfig, profileOf } from '../modules/system/system.repository';
-import { listEnabled } from '../modules/system/menu.repository';
 import { dashboard, ONLINE_WINDOW } from '../modules/stats/stats.service';
 import * as statsRepo from '../modules/stats/stats.repository';
 import { saveUpload } from '../modules/uploads/upload.service';
@@ -272,41 +265,6 @@ export async function handleAdminApi(req: Request, env: Env, sub: string): Promi
     if (!seg[2] && (method === 'PUT' || method === 'PATCH')) {
       return reply(await saveAdmin(env, p, id));
     }
-  }
-
-  /* ============================ 菜单 ============================ */
-
-  if (path === '/menus/options' && method === 'GET') {
-    return reply(okData(await parentMenuOptions(env)));
-  }
-  if (path === '/menus') {
-    if (method === 'GET') return reply(await listMenus(env));
-    if (method === 'POST') return reply(await saveMenu(env, p, 0));
-    if (method === 'DELETE') return reply(await removeMenus(env, p));
-    return notFound();
-  }
-  if (seg[0] === 'menus' && seg.length >= 2) {
-    const id = pathId();
-    if (seg[2] === 'status' && method === 'PATCH') {
-      p['id'] = String(id);
-      return reply(await setMenuStatus(env, p));
-    }
-    if (seg[2] === 'sort' && method === 'PATCH') {
-      p['id'] = String(id);
-      return reply(await sortMenu(env, p));
-    }
-    if (!seg[2] && (method === 'PUT' || method === 'PATCH')) {
-      p['id'] = String(id);
-      return reply(await saveMenu(env, p, id));
-    }
-  }
-
-  /** 侧边栏导航：只要启用中的菜单（扁平，前端自己组树） */
-  if (path === '/nav' && method === 'GET') {
-    const rows = await listEnabled(env.DB);
-    return reply(
-      okData(rows.map((r) => ({ id: r.id, pid: r.pid, title: r.title, icon: r.icon, href: r.href })))
-    );
   }
 
   /* ============================ 配置 ============================ */

@@ -34,7 +34,6 @@ export const ROLES = [
 ];
 
 /** 「上级菜单」下拉的树形缩进（模板里 |raw 输出，所以带 &nbsp;） */
-export const MENU_TREE_INDENT = '&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;├&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;';
 
 /**
  * 回调成功判定模式 → 中文短标签（后台首页展示）。

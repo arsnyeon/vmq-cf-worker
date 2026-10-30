@@ -117,7 +117,6 @@ try {
     ['/qrcodes?page=1&limit=2', '固定金额码'],
     ['/logs?page=1&limit=2', '日志'],
     ['/admins?page=1&limit=2', '管理员'],
-    ['/menus', '菜单'],
   ]) {
     const r = await call('GET', path);
     check(
@@ -129,9 +128,6 @@ try {
 
   const opts = await call('GET', '/passages/options');
   check('通道下拉', opts.json?.code === 1 && Array.isArray(opts.json?.data));
-
-  const nav = await call('GET', '/nav');
-  check('/nav 导航', nav.json?.code === 1 && Array.isArray(nav.json?.data));
 
   console.log('\n=== 配置（密钥不回传） ===');
   const cfg = await call('GET', '/config');

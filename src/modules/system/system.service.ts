@@ -1,5 +1,5 @@
 /**
- * 系统域业务：管理员、站点配置、后台菜单。
+ * 系统域业务：管理员与站点配置。
  */
 import type { Env } from '../../lib/db';
 import { hashPassword } from '../../lib/auth';
@@ -8,10 +8,9 @@ import { DEFAULT_HEAD_IMG } from '../../lib/const';
 import type { ApiResult } from '../../http/respond';
 import { fail, ok, table } from '../../http/respond';
 import { filterVal, idsOf, intVal, pageArgs, strVal } from '../../http/request';
-import { MENU_TREE_INDENT, ROLES } from '../shared/labels';
+import { ROLES } from '../shared/labels';
 import { withTimes } from '../shared/format';
 import * as repo from './system.repository';
-import * as menuRepo from './menu.repository';
 
 /* ============================ 管理员 ============================ */
 
@@ -120,105 +119,6 @@ export async function changePassword(
   if (pw !== again) return fail('两次密码不一致');
   await repo.updatePassword(env.DB, currentUid, await hashPassword(pw));
   return ok('密码已修改，请重新登录');
-}
-
-/* ============================ 后台菜单 ============================ */
-
-/** layui treetable 认的是 authorityId / parentId 这套字段名 */
-export async function listMenus(env: Env): Promise<ApiResult> {
-  const rows = await menuRepo.listAll(env.DB);
-  const data = rows.map((r) => ({
-    id: r.id,
-    authorityId: r.id,
-    parentId: r.pid,
-    authorityName: r.title,
-    menuIcon: r.icon,
-    menuUrl: r.href,
-    isMenu: r.pid === 0 ? 0 : 1,
-    sort: r.sort,
-    remark: r.remark,
-    target: r.target,
-    status: r.status,
-  }));
-  return table(data, data.length);
-}
-
-export async function saveMenu(
-  env: Env,
-  p: Record<string, string>,
-  id: number
-): Promise<ApiResult> {
-  const title = strVal(p, 'title');
-  if (!title) return fail('请填写菜单名称');
-
-  const data = {
-    pid: Number(p['pid'] ?? 0) || 0,
-    sort: Number(p['sort'] ?? 0) || 0,
-    title,
-    icon: strVal(p, 'icon'),
-    href: strVal(p, 'href'),
-    target: p['target'] || '_self',
-    remark: strVal(p, 'remark'),
-  };
-  if (id && data.pid === id) return fail('上级菜单不能是自己');
-
-  if (id) {
-    await menuRepo.update(env.DB, id, data);
-    return ok('保存成功');
-  }
-  await menuRepo.insert(env.DB, data);
-  return ok('添加成功');
-}
-
-/**
- * 「上级菜单」下拉选项。
- *
- * 旧版传进来的是一条已拼好的字符串列表：
- *   顶级菜单
- *   &nbsp;×6 ├ &nbsp;×6 配置管理
- * 顶级分组（pid=0）本身不作为可选项，只列它的子项，按 id 升序；
- * 模板里是 {$v.title|raw}，所以带 &nbsp; 的字符串不会被转义。
- */
-export async function parentMenuOptions(
-  env: Env
-): Promise<Array<{ id: number; title: string }>> {
-  const rows = await menuRepo.listForParentOptions(env.DB);
-
-  // 按 pid 递归算缩进层级：顶级(pid=0) 为 0 层，它的子项为 1 层
-  const depthOf = (id: number, seen = new Set<number>()): number => {
-    if (seen.has(id)) return 0;
-    seen.add(id);
-    const row = rows.find((r) => r.id === id);
-    if (!row || row.pid === 0) return 0;
-    return depthOf(row.pid, seen) + 1;
-  };
-
-  const out: Array<{ id: number; title: string }> = [{ id: 0, title: '顶级菜单' }];
-  for (const r of rows) {
-    out.push({ id: r.id, title: MENU_TREE_INDENT.repeat(depthOf(r.id)) + r.title });
-  }
-  return out;
-}
-
-export async function setMenuStatus(env: Env, p: Record<string, string>): Promise<ApiResult> {
-  const id = intVal(p, 'id');
-  if (!id) return fail('缺少 id');
-  await menuRepo.setStatus(env.DB, id, Number(p['status'] ?? 0) || 0);
-  return ok('设置成功');
-}
-
-export async function sortMenu(env: Env, p: Record<string, string>): Promise<ApiResult> {
-  const id = intVal(p, 'id');
-  if (!id) return fail('缺少 id');
-  await menuRepo.setSort(env.DB, id, Number(p['value'] ?? 0) || 0);
-  return ok('排序已更新');
-}
-
-export async function removeMenus(env: Env, p: Record<string, string>): Promise<ApiResult> {
-  const list = idsOf(p);
-  if (!list.length) return fail('缺少 id');
-  await menuRepo.removeMany(env.DB, list);
-  return ok(`已删除 ${list.length} 条`);
 }
 
 /* ============================ 站点配置 ============================ */
