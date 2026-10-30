@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Save } from 'lucide-react';
+import { CheckCircle2, Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,19 +64,19 @@ const GROUPS: ConfigGroup[] = [
   },
   {
     id: 'secret',
-    title: '密钥',
+    title: '密钥管理',
     fields: [
       {
         name: 'key',
         label: '通讯密钥',
         secret: true,
-        hint: '监控端 App 里填的就是它；留空表示不修改',
+        hint: '监控端 App 里填的就是它',
       },
       {
         name: 'epaykey_ali',
         label: '商户密钥（易支付）',
         secret: true,
-        hint: '留空表示不修改',
+        hint: '易支付网关的商户密钥',
       },
       { name: 'epayid_ali', label: '商户 ID' },
       { name: 'epayurl_ali', label: '支付网关地址' },
@@ -145,13 +145,37 @@ export function ConfigPage() {
                 <CardTitle>{g.title}</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-3">
+                {g.id === 'secret' ? (
+                  <p className="col-span-2 rounded-md border border-border bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                    密钥只存在服务端，接口不会把原值回传，所以输入框始终是空的。
+                    上方标注「已配置」表示该项已有值；留空保存 = 保持不变，填入新值才会覆盖。
+                  </p>
+                ) : null}
                 {g.fields.map((f) => (
                   <div key={f.name} className={f.full ? 'col-span-2 space-y-1.5' : 'space-y-1.5'}>
-                    <Label htmlFor={f.name}>{f.label}</Label>
+                    <div className="flex items-center justify-between gap-2">
+                      <Label htmlFor={f.name}>{f.label}</Label>
+                      {f.secret ? (
+                        secretSet[f.name] ? (
+                          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
+                            <CheckCircle2 className="size-3.5" /> 已配置
+                          </span>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">未配置</span>
+                        )
+                      ) : null}
+                    </div>
                     <Input
                       id={f.name}
                       type={f.secret ? 'password' : 'text'}
-                      placeholder={f.secret && secretSet[f.name] ? '已配置，留空不修改' : ''}
+                      autoComplete="new-password"
+                      placeholder={
+                        f.secret
+                          ? secretSet[f.name]
+                            ? '已配置，留空保存即保持不变'
+                            : '未配置，填入后保存生效'
+                          : ''
+                      }
                       value={values[f.name] ?? ''}
                       onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
                     />
