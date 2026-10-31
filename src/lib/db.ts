@@ -97,14 +97,6 @@ export interface PassageRow {
   update_time: number;
 }
 
-export interface QrcodeRow {
-  id: number;
-  pid: number;
-  money: string;
-  ewm: string;
-  status: number;
-}
-
 /** 订单状态：与后台模板一致，不要改 */
 export const STATUS = {
   PENDING: 0, // 待支付

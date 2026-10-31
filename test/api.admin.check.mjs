@@ -114,7 +114,6 @@ try {
   for (const [path, name] of [
     ['/orders?page=1&limit=2', '订单'],
     ['/passages?page=1&limit=2', '通道'],
-    ['/qrcodes?page=1&limit=2', '固定金额码'],
     ['/logs?page=1&limit=2', '日志'],
     ['/admins?page=1&limit=2', '管理员'],
   ]) {
@@ -125,9 +124,6 @@ try {
       `count=${r.json?.count}`
     );
   }
-
-  const opts = await call('GET', '/passages/options');
-  check('通道下拉', opts.json?.code === 1 && Array.isArray(opts.json?.data));
 
   console.log('\n=== 配置（密钥不回传） ===');
   const cfg = await call('GET', '/config');
@@ -289,6 +285,12 @@ try {
   console.log('\n=== 边界 ===');
   const unknown = await call('GET', '/nope');
   check('未知接口 404', unknown.status === 404);
+  // 固定金额码已整块下线：接口必须消失，而不是留个空实现
+  const goneQr = await call('GET', '/qrcodes');
+  check('固定金额码接口已下线 404', goneQr.status === 404, String(goneQr.status));
+  // 「所属通道」下拉只服务于固定金额码表单，随功能一起下线
+  const goneOpts = await call('GET', '/passages/options');
+  check('通道下拉接口一并下线 404', goneOpts.status === 404, String(goneOpts.status));
   const badPage = await call('GET', '/orders?page=abc&limit=999');
   check('非法分页参数不报错', badPage.json?.code === 0, `count=${badPage.json?.count}`);
 

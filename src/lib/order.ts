@@ -104,21 +104,9 @@ async function insertOrder(env: Env, o: NewOrder): Promise<CreateOrderResult> {
 
   const truemoney = fenToYuan(realFen);
 
-  // 固定金额码优先：金额精确命中、且所属通道类型一致、且通道开启
-  let payUrl = passage.ewm;
-  let isAuto = 1;
-  const fixed = await env.DB.prepare(
-    `SELECT q.ewm AS ewm FROM qrcodes q
-       JOIN passages p ON p.id = q.pid
-      WHERE q.money = ? AND q.status = 1 AND p.type = ? AND p.status = 1
-      ORDER BY q.id LIMIT 1`
-  )
-    .bind(truemoney, o.type)
-    .first<{ ewm: string }>();
-  if (fixed?.ewm) {
-    payUrl = fixed.ewm;
-    isAuto = 0;
-  }
+  // 订单一律用通道自己的收款码，全部由监控端自动核对（is_auto 恒为 1）
+  const payUrl = passage.ewm;
+  const isAuto = 1;
 
   try {
     await env.DB.prepare(

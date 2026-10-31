@@ -7,7 +7,6 @@ import type { ApiResult } from '../../http/respond';
 import { fail, ok, table } from '../../http/respond';
 import { filterVal, idsOf, intVal, pageArgs } from '../../http/request';
 import { dayTs } from '../shared/format';
-import { PAY_TYPE_LABEL } from '../shared/labels';
 import * as repo from './passage.repository';
 import { toListRow } from './passage.presenter';
 
@@ -103,16 +102,4 @@ export async function removePassages(env: Env, p: Record<string, string>): Promi
   if (!list.length) return fail('缺少 id');
   await repo.removeMany(env.DB, list);
   return ok(`已删除 ${list.length} 条`);
-}
-
-/** 「所属通道」下拉选项：type 直接给中文支付模式，模板自己拼整句 */
-export async function passageOptionRows(
-  env: Env
-): Promise<Array<{ id: number; type: string; remarks: string }>> {
-  const rows = await repo.listOptions(env.DB);
-  return rows.map((r) => ({
-    id: r.id,
-    type: PAY_TYPE_LABEL[Number(r.type)] ?? String(r.type),
-    remarks: r.remarks ?? '',
-  }));
 }

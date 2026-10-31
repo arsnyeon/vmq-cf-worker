@@ -44,7 +44,7 @@ CREATE TABLE IF NOT EXISTS orders (
   money           TEXT    NOT NULL,          -- 商户下单金额
   truemoney       TEXT    NOT NULL,          -- 实际应付金额（金额池分配）
   pay_url         TEXT    NOT NULL DEFAULT '',
-  is_auto         INTEGER NOT NULL DEFAULT 1,  -- 1 通道默认码 / 0 固定金额码
+  is_auto         INTEGER NOT NULL DEFAULT 1,  -- 1 自动核对；0 是已下线的固定金额码时代留下的历史值
   notify_url      TEXT    NOT NULL DEFAULT '',
   return_url      TEXT    NOT NULL DEFAULT '',
   sitename        TEXT    NOT NULL DEFAULT '',
@@ -66,18 +66,6 @@ CREATE TABLE IF NOT EXISTS tmp_price (
   oid        TEXT NOT NULL,
   created_at INTEGER NOT NULL
 );
-
--- 固定金额收款码（金额精确命中时优先使用它，而不是通道默认码）
-CREATE TABLE IF NOT EXISTS qrcodes (
-  id          INTEGER PRIMARY KEY AUTOINCREMENT,
-  pid         INTEGER NOT NULL,              -- 所属通道
-  money       TEXT    NOT NULL,              -- 固定金额
-  ewm         TEXT    NOT NULL DEFAULT '',   -- 收款码（图片地址或二维码内容）
-  status      INTEGER NOT NULL DEFAULT 1,
-  create_time INTEGER NOT NULL DEFAULT 0,
-  update_time INTEGER NOT NULL DEFAULT 0
-);
-CREATE INDEX IF NOT EXISTS idx_qrcodes_pm ON qrcodes(pid, money, status);
 
 -- 商户回调重试队列
 CREATE TABLE IF NOT EXISTS notify_task (

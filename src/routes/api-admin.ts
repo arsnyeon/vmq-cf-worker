@@ -22,17 +22,10 @@ import { handleCaptcha, handleLoginPost } from './auth';
 import { listOrders, removeOrders, setBd } from '../modules/orders/order.service';
 import {
   listPassages,
-  passageOptionRows,
   removePassages,
   savePassage,
   setPassageStatus,
 } from '../modules/passages/passage.service';
-import {
-  listQrcodes,
-  removeQrcodes,
-  saveQrcode,
-  setQrcodeStatus,
-} from '../modules/qrcodes/qrcode.service';
 import { listLogs, removeLogs } from '../modules/content/content.service';
 import {
   changePassword,
@@ -197,9 +190,6 @@ export async function handleAdminApi(req: Request, env: Env, sub: string): Promi
 
   /* ============================ 通道 ============================ */
 
-  if (path === '/passages/options' && method === 'GET') {
-    return reply(okData(await passageOptionRows(env)));
-  }
   if (path === '/passages') {
     if (method === 'GET') {
       // 传对外 origin：反代场景下 Host 已是 Worker 域名，真实域名在 X-Forwarded-Host
@@ -218,25 +208,6 @@ export async function handleAdminApi(req: Request, env: Env, sub: string): Promi
     }
     if (!seg[2] && (method === 'PUT' || method === 'PATCH')) {
       return reply(await savePassage(env, p, id));
-    }
-  }
-
-  /* ============================ 固定金额码 ============================ */
-
-  if (path === '/qrcodes') {
-    if (method === 'GET') return reply(await listQrcodes(env, p));
-    if (method === 'POST') return reply(await saveQrcode(env, p, 0));
-    if (method === 'DELETE') return reply(await removeQrcodes(env, p));
-    return notFound();
-  }
-  if (seg[0] === 'qrcodes' && seg.length >= 2) {
-    const id = pathId();
-    if (seg[2] === 'status' && method === 'PATCH') {
-      p['id'] = String(id);
-      return reply(await setQrcodeStatus(env, p));
-    }
-    if (!seg[2] && (method === 'PUT' || method === 'PATCH')) {
-      return reply(await saveQrcode(env, p, id));
     }
   }
 

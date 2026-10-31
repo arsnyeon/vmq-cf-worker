@@ -23,7 +23,7 @@ function previewSrc(v: string) {
  * 两种上传走两条路，对应后端 `ewm_type` 的两种语义：
  *   · 「上传图片并解码」→ 把二维码里的内容（wxp:// / https://qr.alipay.com/…）填进文本框
  *   · 「上传为图片」    → 存图片地址本身，支付页原样展示（赞赏码）
- * 没有传 `onImage` 时只保留解码这条路（固定金额码只存解码后的内容）。
+ * 没有传 `onImage` 时只保留解码这条路（只存解码后的内容，不落图片地址）。
  */
 export function QrCodeField({
   id = 'ewm',

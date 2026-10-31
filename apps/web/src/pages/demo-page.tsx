@@ -18,10 +18,23 @@ function orderNumber() {
   return `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}${Math.floor(Math.random() * 9000 + 1000)}`;
 }
 
+/**
+ * 体验金额：每次进入/刷新页面随机一个 0.05 ~ 1.00 元（闭区间，两位小数）。
+ *
+ * 为什么随机：体验页如果固定一个金额，多笔测试单会撞在同一个金额上，
+ * 而平台是按「金额 + 通道」去匹配收款的，撞车时不容易看出哪笔对应哪个订单。
+ * 直接用状态初始化器调用，组件挂载时取一次值，刷新即换新值。
+ */
+function randomMoney(): string {
+  // 5..100 分（96 种可能），/100 后正好落在 0.05 ~ 1.00
+  return ((Math.floor(Math.random() * 96) + 5) / 100).toFixed(2);
+}
+
 export function DemoPage() {
   const { title } = getSiteSettings();
   const [channel, setChannel] = useState('wxpay');
   const [outTradeNo] = useState(orderNumber);
+  const [money, setMoney] = useState(randomMoney);
 
   return (
     <SiteLayout current="demo">
@@ -59,14 +72,17 @@ export function DemoPage() {
                 type="number"
                 min="0.01"
                 step="0.01"
-                defaultValue="0.10"
+                value={money}
+                onChange={(e) => setMoney(e.target.value)}
                 required
                 inputMode="decimal"
                 className="min-h-16 min-w-0 flex-1 rounded-xl border-0 bg-transparent px-3 text-3xl font-bold tracking-tight outline-none"
               />
               <span className="pr-5 text-sm text-muted-foreground">元</span>
             </div>
-            <p className="mb-0 mt-2 text-xs leading-5 text-muted-foreground">请输入大于 0 的金额，最多保留两位小数。</p>
+            <p className="mb-0 mt-2 text-xs leading-5 text-muted-foreground">
+              每次刷新会随机生成 0.05 ~ 1.00 元的体验金额，也可以改为其他大于 0 的金额（最多两位小数）。
+            </p>
 
             <fieldset className="mt-9 border-0 p-0">
               <legend className="mb-4 p-0 text-sm font-semibold">选择支付方式</legend>

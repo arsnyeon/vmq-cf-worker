@@ -103,16 +103,6 @@ export async function findById(
   return (row as Record<string, unknown>) ?? null;
 }
 
-/** 固定金额码页面「所属通道」下拉用 */
-export async function listOptions(
-  db: D1Database
-): Promise<Array<{ id: number; type: number; remarks: string }>> {
-  const r = await db
-    .prepare('SELECT id, type, remarks FROM passages ORDER BY id ASC')
-    .all<{ id: number; type: number; remarks: string }>();
-  return r.results;
-}
-
 /** 表单参数 → 可写字段（文本 / 数字分别处理，未传的字段跳过） */
 export function parseFields(p: Record<string, string>): Record<string, unknown> {
   const data: Record<string, unknown> = {};
