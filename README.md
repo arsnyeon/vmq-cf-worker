@@ -239,6 +239,9 @@ DELETE FROM admins;
 **Q：换域名要改哪些地方？**
 ① `wrangler.local.jsonc` 的 `routes`；② 后台「系统配置 → 站点信息」的站点地址；③ 商户侧的 `notify_url`。监控端二维码里的域名也要重新扫。
 
+**Q：想彻底重来（删掉 Worker 和数据库再装一次）？**
+见 [`docs/reset-and-redeploy.md`](docs/reset-and-redeploy.md)：备份 → 删除顺序 → 重建 D1 → 部署 → 初始化 → 五组验证 → 常见报错排查，每一步都有对应的验证命令。
+
 ## 本地开发
 
 ```bash
