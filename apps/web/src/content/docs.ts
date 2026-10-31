@@ -104,12 +104,13 @@ export async function handleNotify(request) {
     timingSafeEqual(Buffer.from(receivedSign), Buffer.from(calculatedSign));
 
   if (!validSign || data.trade_status !== 'TRADE_SUCCESS') {
-    return new Response('fail', { status: 400 });
+    return new Response(JSON.stringify({ code: 0, msg: 'fail' }), { status: 200 });
   }
 
   // 按 out_trade_no 查询商户订单，核对金额并进行幂等入账。
-  // 已处理的重复通知也应返回 success。
-  return new Response('success');
+  // 平台以 JSON 的 code 字段判定：code=1 视为成功，其余（含网络失败）进入重试。
+  // 已处理的重复通知也应返回 code=1。
+  return new Response(JSON.stringify({ code: 1, msg: 'success' }));
 }`;
 
 const queryExample = String.raw`const orderId = '20261029120000123456';
@@ -209,7 +210,7 @@ export const resultDoc: DocDefinition = {
   notes: [
     '验签规则与下单一致：剔除 sign、sign_type 和空值，按参数名排序拼接，追加商户 KEY 后计算 MD5。',
     '只有验签成功且 trade_status 为 TRADE_SUCCESS 时才能处理商户订单，并根据 out_trade_no 做好幂等控制。',
-    '处理成功后返回纯文本 success。其他响应或网络失败会进入重试流程，因此重复通知必须能够安全处理。',
+    '处理成功后返回 JSON 且 code 字段为 1（如 {"code":1}）。其他响应或网络失败会进入重试流程，因此重复通知必须能够安全处理。',
     'return_url 是用户浏览器回跳，不能作为唯一入账依据；商户订单状态应以验签后的异步通知或主动查询为准。',
   ],
   code: notifyExample,
