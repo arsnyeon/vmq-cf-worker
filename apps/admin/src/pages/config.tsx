@@ -30,7 +30,7 @@ interface ConfigGroup {
   fields: ConfigField[];
 }
 
-/** 配置分组：按使用场景拆成四组，一组一个 tab、各自独立保存 */
+/** 配置分组：按使用场景拆成三组，一组一个 tab、各自独立保存 */
 const GROUPS: ConfigGroup[] = [
   {
     id: 'site',
@@ -71,16 +71,6 @@ const GROUPS: ConfigGroup[] = [
       },
       { name: 'epayid_ali', label: '商户 ID' },
       { name: 'epayurl_ali', label: '支付网关地址' },
-    ],
-  },
-  {
-    id: 'contact',
-    title: '联系方式',
-    fields: [
-      { name: 'phone', label: '电话' },
-      { name: 'qq', label: 'QQ' },
-      { name: 'weixin', label: '微信' },
-      { name: 'email', label: '邮箱' },
     ],
   },
 ];

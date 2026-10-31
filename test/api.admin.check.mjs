@@ -132,6 +132,18 @@ try {
   check('密钥未出现在 config 里', cfgData.key === undefined && cfgData.epaykey_ali === undefined);
   check('密钥用 secretSet 标记', typeof cfg.json?.data?.secretSet === 'object');
 
+  // 「联系方式」配置已整块下线：phone/qq/weixin/email 不在 CONFIG_KEYS 里，
+  // 单独提交会被判「没有需要保存的内容」，也不会落库。
+  const goneContact = await call('PUT', '/config', { phone: '13800000000', qq: '123456' });
+  check('联系方式键已不可写入', goneContact.json?.code === 0, goneContact.json?.msg ?? '');
+  const cfgNoContact = await call('GET', '/config');
+  const noContact = cfgNoContact.json?.data?.config ?? {};
+  check(
+    '联系方式不再回传',
+    !noContact.phone && !noContact.qq && !noContact.weixin && !noContact.email,
+    JSON.stringify({ phone: noContact.phone, qq: noContact.qq })
+  );
+
   // app_key 与 key 等价（db.ts 的 appSecret 优先读它），必须同样过滤掉。
   // PUT /config 不接受这个键（不在 CONFIG_KEYS 里），所以直接写库模拟真实配置。
   console.log('\n=== app_key 不回传（回归） ===');

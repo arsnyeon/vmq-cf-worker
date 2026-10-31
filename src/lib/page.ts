@@ -54,10 +54,6 @@ export function siteVars(s: Settings): Record<string, unknown> {
     footer: s['footer'] ?? '',
     edition: s['edition'] ?? 'v1.0.0',
     url: s['url'] ?? '',
-    qq: s['qq'] ?? '',
-    weixin: s['weixin'] ?? '',
-    phone: s['phone'] ?? '',
-    email: s['email'] ?? '',
   };
 }
 
