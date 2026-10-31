@@ -249,20 +249,17 @@ export async function handleAdminApi(req: Request, env: Env, sub: string): Promi
       const all = await allConfig(env.DB);
       const data: Record<string, string> = { ...all };
       const secretSet: Record<string, boolean> = {};
-      const secretInfo: Record<string, { mask: string; len: number }> = {};
       for (const k of SECRET_CONFIG_KEYS) {
-        const v = all[k] ?? '';
-        secretSet[k] = !!v;
-        // 不回传原值，只给「前 6 位 + 长度」，让管理员能确认是不是装的时候生成的那把，
-        // 又不足以反推出密钥（32 位十六进制里 6 位只有 24 bit 信息量）。
-        if (v) secretInfo[k] = { mask: `${v.slice(0, 6)}…`, len: v.length };
-        delete data[k];
+        secretSet[k] = !!(all[k] ?? '');
+        // 通讯密钥要在界面上直接可读可复制（商户、监控端都得用它），所以照样回传；
+        // 其余密钥仍是「只告诉配过没」，原文不出库。
+        if (k !== 'key') delete data[k];
       }
       // 支付网关地址的默认值：系统自己的域名（带协议）。
       // 优先用「站点地址」配置，没配就用当前请求的对外 origin，反代场景下也对。
       const reqOrigin = `${externalProto(req)}://${externalHost(req)}`;
       const defaults = { epayurl_ali: originOf(all['url'] ?? '') || reqOrigin };
-      return reply(okData({ config: data, secretSet, secretInfo, defaults }));
+      return reply(okData({ config: data, secretSet, defaults }));
     }
     if (method === 'PUT' || method === 'POST') return reply(await saveConfig(env, p));
     return notFound();

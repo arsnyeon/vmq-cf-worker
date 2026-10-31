@@ -213,13 +213,20 @@ export async function handleSetup(req: Request, env: Env): Promise<Response> {
   // 已经有值的密钥不重新生成 —— 忘记密码时走"清空 admins 表 → 重新 /setup"这条路，
   // 通讯密钥必须保持不变，否则监控端要重新绑定、历史订单的验签也会对不上。
   const existing = await env.DB.prepare(
-    "SELECT k, v FROM config WHERE k IN ('key','admin_secret','cron_key')"
+    "SELECT k, v FROM config WHERE k IN ('key','admin_secret','cron_key','epayid_ali')"
   ).all<{ k: string; v: string }>();
   const have = new Map((existing.results ?? []).map((r) => [r.k, r.v || '']));
 
   const commKey = have.get('key') || randHex(16); // 通讯密钥（appPush 验签）
   const adminSecret = have.get('admin_secret') || randHex(16); // 会话/验证码签名
   const cronKey = have.get('cron_key') || randHex(16); // 兼容旧版的"监控密钥"字段
+  // 商户 ID（pid）：商户下单时必传、且要写进回调，但服务端不做比对，本质上是个
+  // 约定值的凭证。以前留空让用户自己编，现在装的时候就生成一个 10 位数字
+  //（和旧部署手填的形态一致：7000000000），后台「密钥管理」里直接显示、可复制。
+  const epayId = have.get('epayid_ali') || String(Math.floor(1e9 + Math.random() * 9e9));
+  // 对外域名：监控端扫码配置、支付网关地址都用它；认 X-Forwarded-Host，
+  // 反代场景下不会把 Worker 自己的域名写进去。
+  const siteUrl = `${externalProto(req)}://${externalHost(req)}`;
   const pwHash = await hashPassword(password);
   const ts = Math.floor(Date.now() / 1000);
 
@@ -230,10 +237,10 @@ export async function handleSetup(req: Request, env: Env): Promise<Response> {
     ['admin_secret', adminSecret],
     ['cron_key', cronKey],
     ['title', sitename],
-    // 站点地址：监控端扫码配置要用域名，装的时候就把当前访问域名写进去，
-    // 省得用户还要去「系统配置」手填一遍。
-    // 用对外域名（认 X-Forwarded-Host），反代场景下不会把 Worker 自己的域名写进去。
-    ['url', `${externalProto(req)}://${externalHost(req)}`],
+    ['url', siteUrl],
+    ['epayid_ali', epayId],
+    // 支付网关地址就是本站地址，先落库一份，商户接入时按这个填，不用靠界面占位符猜
+    ['epayurl_ali', siteUrl],
   ];
 
   try {

@@ -2,7 +2,7 @@ import type { DocParameter } from '@/components/docs/doc-ui';
 import type { DocDefinition } from '@/pages/api-doc-page';
 
 const baseRequest: DocParameter[] = [
-  { label: '商户 ID', name: 'pid', type: 'Int', example: '1000', description: '后台接口配置中的商户 ID。' },
+  { label: '商户 ID', name: 'pid', type: 'Int', example: '1000', description: '后台「系统配置 → 密钥管理」里的商户 ID，安装时自动生成 10 位数字，可直接复制。' },
   { label: '支付方式', name: 'type', type: 'String', example: 'alipay', description: '支持 wxpay、alipay、qqpay、rmbpay。' },
   { label: '商户订单号', name: 'out_trade_no', type: 'String', example: '202610290001', description: '商户系统内唯一的订单号，不允许重复。' },
   { label: '商品名称', name: 'name', type: 'String', example: 'VIP 会员', description: '展示在订单和支付页面中的商品名称。' },
@@ -194,7 +194,7 @@ export const resultDoc: DocDefinition = {
   method: 'GET',
   endpoint: 'https://example.com/notify',
   request: [
-    { label: '商户 ID', name: 'pid', type: 'Int', example: '1000', description: '订单对应的商户 ID。' },
+    { label: '商户 ID', name: 'pid', type: 'Int', example: '1000', description: '订单对应的商户 ID（与下单时一致）。' },
     { label: '支付方式', name: 'type', type: 'String', example: 'alipay', description: 'wxpay、alipay、qqpay 或 rmb。' },
     { label: '商户订单号', name: 'out_trade_no', type: 'String', example: '202610290001', description: '商户系统内部的订单号。' },
     { label: '平台订单号', name: 'trade_no', type: 'String', example: '20261029120000123456', description: '平台生成的订单号。' },

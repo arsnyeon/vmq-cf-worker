@@ -129,8 +129,12 @@ try {
   const cfg = await call('GET', '/config');
   const cfgData = cfg.json?.data?.config ?? {};
   check('/config 返回配置对象', cfg.json?.code === 1 && typeof cfgData === 'object');
-  check('密钥未出现在 config 里', cfgData.key === undefined && cfgData.epaykey_ali === undefined);
+  // 通讯密钥要在界面上直接可复制，所以明文回传；其它密钥仍然只给「配过没」
+  const dbKey = execFileSync('sqlite3', [DB, "SELECT v FROM config WHERE k='key'"], { encoding: 'utf8' }).trim();
+  check('通讯密钥明文回传（与库里一致）', cfgData.key === dbKey && dbKey.length > 0, `${dbKey.slice(0, 6)}…`);
+  check('商户密钥不回传', cfgData.epaykey_ali === undefined);
   check('密钥用 secretSet 标记', typeof cfg.json?.data?.secretSet === 'object');
+  check('不再回传掩码字段', cfg.json?.data?.secretInfo === undefined);
 
   // 支付网关地址没填过时，界面用本站域名兜底，所以接口要给出默认值
   check(
@@ -177,10 +181,6 @@ try {
     const body = JSON.stringify(withKey.json ?? {});
     check('app_key 原值不回传', !body.includes(SENTINEL), body.includes(SENTINEL) ? '泄露！' : '已过滤');
     check('secretSet 标记 app_key 已配置', withKey.json?.data?.secretSet?.app_key === true);
-    // 页面要展示「装的时候生成的那把」，但只能给掩码：前 6 位 + 长度
-    const si = withKey.json?.data?.secretInfo?.app_key;
-    check('密钥只回传掩码（前 6 位）', si?.mask === `${SENTINEL.slice(0, 6)}…`, si?.mask ?? '缺失');
-    check('掩码带长度', si?.len === SENTINEL.length, String(si?.len));
     sqlRun(`DELETE FROM config WHERE k='app_key';`);
     const afterClean = await call('GET', '/config');
     check('清理后不再标记 app_key', afterClean.json?.data?.secretSet?.app_key === false);

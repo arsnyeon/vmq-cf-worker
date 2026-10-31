@@ -240,6 +240,8 @@ eq(await appConfigOf({ key: 'KEY123' }, ''), '', '域名也没认到时返回空
   eq(kv['title'], '演示站', '/setup 写入站点名称');
   eq(kv['admin_alias'], 'myvault', '/setup 写入后台别名');
   eq(/^INSERT INTO admins/.test(written[0].sql), true, '/setup 建管理员');
+  eq(/^\d{10}$/.test(kv['epayid_ali'] ?? ''), true, '/setup 自动生成 10 位商户 ID', String(kv['epayid_ali']));
+  eq(kv['epayurl_ali'], 'https://pay.example.com', '/setup 落库支付网关地址');
 
   // 反代场景：对外域名只在 X-Forwarded-Host 里，不能把 Worker 自己的域名写进去
   written.length = 0;
@@ -253,6 +255,7 @@ eq(await appConfigOf({ key: 'KEY123' }, ''), '', '域名也没认到时返回空
   );
   const kv2 = Object.fromEntries(written.map((w) => [w.binds[0], w.binds[1]]));
   eq(kv2['url'], 'https://pay.example.com', '/setup 认 X-Forwarded-Host');
+  eq(kv2['epayurl_ali'], 'https://pay.example.com', '网关地址也用对外域名');
   eq(
     res2.headers.get('location'),
     'https://pay.example.com/myvault/login',

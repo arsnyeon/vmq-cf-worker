@@ -14,8 +14,6 @@ import { api, ApiError } from '@/lib/api';
 interface ConfigPayload {
   config: Record<string, string>;
   secretSet: Record<string, boolean>;
-  /** 密钥不回传原值，只给「前 6 位 + 长度」，供页面展示「装的时候生成的那把」 */
-  secretInfo?: Record<string, { mask: string; len: number }>;
   /** 用户没填过时的默认值（目前只有支付网关地址 = 本站域名） */
   defaults?: Record<string, string>;
 }
@@ -24,7 +22,10 @@ interface ConfigField {
   name: string;
   label: string;
   hint?: string;
+  /** 留空保存 = 保持不变（提交时空值会被跳过，避免误清空） */
   secret?: boolean;
+  /** 明文展示（通讯密钥要能直接看见、复制） */
+  plain?: boolean;
   full?: boolean;
 }
 
@@ -65,7 +66,8 @@ const GROUPS: ConfigGroup[] = [
         name: 'key',
         label: '通讯密钥',
         secret: true,
-        hint: '监控端 App 和商户下单共用这一把：App 的心跳/推送、商户下单与回调验签都用它。安装时自动生成 32 位，改动前请先同步 App 与商户，否则验签会全部失败。',
+        plain: true,
+        hint: '监控端 App 和商户下单共用这一把：App 的心跳/推送、商户下单与回调验签都用它。安装时自动生成 32 位，可直接复制；改动前请先同步 App 与商户，否则验签会全部失败。',
       },
       {
         name: 'epaykey_ali',
@@ -76,12 +78,12 @@ const GROUPS: ConfigGroup[] = [
       {
         name: 'epayid_ali',
         label: '商户 ID',
-        hint: '商户下单时随订单记录并原样回传；本站不做比对，可与商户约定任意值。',
+        hint: '安装时自动生成（10 位数字）。商户下单时必须带上，会随订单记录并原样写进回调；本站不做比对，但改了要和商户端的 PID 一起改。',
       },
       {
         name: 'epayurl_ali',
         label: '支付网关地址',
-        hint: '给商户对接用的网关根地址（含协议）。留空则使用本站域名；本站不会主动请求它。',
+        hint: '安装时自动填成本站地址（含协议），商户接入时按它填网关；本站不会主动请求这个地址。',
       },
     ],
   },
@@ -129,7 +131,6 @@ export function ConfigPage() {
   }
 
   const secretSet = cfg.data?.secretSet ?? {};
-  const secretInfo = cfg.data?.secretInfo ?? {};
 
   return (
     <>
@@ -159,23 +160,17 @@ export function ConfigPage() {
                   <div key={f.name} className={f.full ? 'col-span-2 space-y-1.5' : 'space-y-1.5'}>
                     <div className="flex items-center justify-between gap-2">
                       <Label htmlFor={f.name}>{f.label}</Label>
-                      {f.secret ? (
+                      {f.secret && !f.plain ? (
                         secretSet[f.name] ? (
                           <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                             <CheckCircle2 className="size-3.5" /> 已配置
-                            {/* 接口不回传原值，这里只展示掩码，确认是不是安装时生成的那把 */}
-                            {secretInfo[f.name] ? (
-                              <code className="font-normal text-muted-foreground">
-                                {secretInfo[f.name].mask}（{secretInfo[f.name].len} 位）
-                              </code>
-                            ) : null}
                           </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">未配置</span>
                         )
                       ) : null}
                     </div>
-                    {f.secret ? (
+                    {f.secret && !f.plain ? (
                       <PasswordInput
                         id={f.name}
                         autoComplete="new-password"
