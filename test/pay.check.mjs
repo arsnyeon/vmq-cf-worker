@@ -87,6 +87,14 @@ check(
 );
 check('失效文案明确要求重新下单', desktop.includes('二维码已失效，请重新下单'));
 check('倒计时数字字号放大', /\.countdown strong\{[^}]*font-size:2[0-9]px/.test(desktop));
+check('顶部只保留品牌图（无 ¥ 方块）', !desktop.includes('brand-mark') && !desktop.includes('¥'));
+check('商品信息在平台订单号上方', desktop.indexOf('class="goods"') < desktop.indexOf('class="order-id"'));
+check('商品信息 14px', /\.goods\{[^}]*font-size:14px/.test(desktop));
+check(
+  '订单号单行、超长省略',
+  /\.order-id\{[^}]*white-space:nowrap/.test(desktop) &&
+    /\.order-id-no\{[^}]*text-overflow:ellipsis/.test(desktop)
+);
 check('失效后隐藏「请付款」与扫码提示', desktop.includes("amountNotice.style.display='none'") && desktop.includes("payHint.style.display='none'"));
 check('后台标签页暂停网络轮询', desktop.includes("if(document.hidden){schedulePoll(2000);return}"));
 check('支付成功保留支付宝关闭与签名回跳', desktop.includes("closeWebview") && desktop.includes("location.href=url"));
