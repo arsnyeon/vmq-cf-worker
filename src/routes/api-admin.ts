@@ -253,9 +253,10 @@ export async function handleAdminApi(req: Request, env: Env, sub: string): Promi
       const secretSet: Record<string, boolean> = {};
       for (const k of SECRET_CONFIG_KEYS) {
         secretSet[k] = !!(all[k] ?? '');
-        // 通讯密钥要在界面上直接可读可复制（商户、监控端都得用它），所以照样回传；
-        // 其余密钥仍是「只告诉配过没」，原文不出库。
-        if (k !== 'key') delete data[k];
+        // 通讯密钥 / 商户密钥都要在界面上直接可见可复制（商户、监控端都得用它），
+        // 所以这两个照旧回传；其余密钥仍是「只告诉配过没」，原文不出库。
+        if (k === 'key' || k === 'epaykey_ali') continue;
+        delete data[k];
       }
       // 支付网关地址的默认值：系统自己的域名（带协议）。
       // 优先用「站点地址」配置，没配就用当前请求的对外 origin，反代场景下也对。

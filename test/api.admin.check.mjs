@@ -126,14 +126,21 @@ try {
     );
   }
 
-  console.log('\n=== 配置（密钥不回传） ===');
+  console.log('\n=== 配置（密钥字段） ===');
   const cfg = await call('GET', '/config');
   const cfgData = cfg.json?.data?.config ?? {};
   check('/config 返回配置对象', cfg.json?.code === 1 && typeof cfgData === 'object');
   // 通讯密钥要在界面上直接可复制，所以明文回传；其它密钥仍然只给「配过没」
   const dbKey = execFileSync('sqlite3', [DB, "SELECT v FROM config WHERE k='key'"], { encoding: 'utf8' }).trim();
   check('通讯密钥明文回传（与库里一致）', cfgData.key === dbKey && dbKey.length > 0, `${dbKey.slice(0, 6)}…`);
-  check('商户密钥不回传', cfgData.epaykey_ali === undefined);
+  const dbEpayKey = execFileSync('sqlite3', [DB, "SELECT v FROM config WHERE k='epaykey_ali'"], {
+    encoding: 'utf8',
+  }).trim();
+  check(
+    '商户密钥明文回传（与库里一致）',
+    cfgData.epaykey_ali === dbEpayKey,
+    `${(dbEpayKey || '(空)').slice(0, 6)}…`
+  );
   check('密钥用 secretSet 标记', typeof cfg.json?.data?.secretSet === 'object');
   check('不再回传掩码字段', cfg.json?.data?.secretInfo === undefined);
 

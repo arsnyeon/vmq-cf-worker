@@ -1,10 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, Save } from 'lucide-react';
+import { Save } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -13,7 +12,6 @@ import { api, ApiError } from '@/lib/api';
 
 interface ConfigPayload {
   config: Record<string, string>;
-  secretSet: Record<string, boolean>;
   /** 用户没填过时的默认值（目前只有支付网关地址 = 本站域名） */
   defaults?: Record<string, string>;
 }
@@ -22,10 +20,9 @@ interface ConfigField {
   name: string;
   label: string;
   hint?: string;
-  /** 留空保存 = 保持不变（提交时空值会被跳过，避免误清空） */
+  /** 留空保存 = 保持不变（提交时空值会被跳过，避免误清空）。
+      密钥类字段在界面上都是明文展示、可直接复制的。 */
   secret?: boolean;
-  /** 明文展示（通讯密钥要能直接看见、复制） */
-  plain?: boolean;
   full?: boolean;
 }
 
@@ -66,7 +63,6 @@ const GROUPS: ConfigGroup[] = [
         name: 'key',
         label: '通讯密钥',
         secret: true,
-        plain: true,
         hint: '监控端 App 和商户下单共用这一把：App 的心跳/推送、商户下单与回调验签都用它。安装时自动生成 32 位，可直接复制；改动前请先同步 App 与商户，否则验签会全部失败。',
       },
       {
@@ -130,7 +126,6 @@ export function ConfigPage() {
     save.mutate(body);
   }
 
-  const secretSet = cfg.data?.secretSet ?? {};
 
   return (
     <>
@@ -158,35 +153,14 @@ export function ConfigPage() {
               <CardContent className="grid grid-cols-2 gap-3">
                 {g.fields.map((f) => (
                   <div key={f.name} className={f.full ? 'col-span-2 space-y-1.5' : 'space-y-1.5'}>
-                    <div className="flex items-center justify-between gap-2">
-                      <Label htmlFor={f.name}>{f.label}</Label>
-                      {f.secret && !f.plain ? (
-                        secretSet[f.name] ? (
-                          <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
-                            <CheckCircle2 className="size-3.5" /> 已配置
-                          </span>
-                        ) : (
-                          <span className="text-xs text-muted-foreground">未配置</span>
-                        )
-                      ) : null}
-                    </div>
-                    {f.secret && !f.plain ? (
-                      <PasswordInput
-                        id={f.name}
-                        autoComplete="new-password"
-                        placeholder={
-                          secretSet[f.name] ? '已配置，留空保存即保持不变' : '未配置，填入后保存生效'
-                        }
-                        value={values[f.name] ?? ''}
-                        onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
-                      />
-                    ) : (
-                      <Input
-                        id={f.name}
-                        value={values[f.name] ?? ''}
-                        onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
-                      />
-                    )}
+                    <Label htmlFor={f.name}>{f.label}</Label>
+                    <Input
+                      id={f.name}
+                      value={values[f.name] ?? ''}
+                      onChange={(e) => setValues((v) => ({ ...v, [f.name]: e.target.value }))}
+                      // 密钥是明文展示的，清空后保存等于「不修改」，这里给个提示
+                      placeholder={f.secret ? '留空保存表示不修改' : undefined}
+                    />
                     {f.hint ? <p className="text-xs text-muted-foreground">{f.hint}</p> : null}
                   </div>
                 ))}
