@@ -40,7 +40,7 @@ const GROUPS: ConfigGroup[] = [
     fields: [
       { name: 'title', label: '站点名称' },
       { name: 'url', label: '站点地址', hint: '含协议，如 https://pay.example.com' },
-      { name: 'resource_url', label: '静态资源地址', hint: '留空用相对路径 /static' },
+      { name: 'resource_url', label: '静态资源地址', hint: '所有 JS/CSS/图片的资源根地址（含协议，末尾不带斜杠）。留空则用本站相对路径。填 CDN 后需把 site/、console/、static/ 三个目录平铺上传到该地址下。' },
       { name: 'keywords', label: '关键词' },
       { name: 'description', label: '描述', full: true },
       { name: 'footer', label: '页脚', full: true },

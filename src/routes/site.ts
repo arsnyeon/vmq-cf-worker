@@ -1,7 +1,7 @@
 /** 站点前台页面（首页 / 文档 / 示例 / 查单）以及二维码、上传资源输出 */
 
 import type { Env } from '../lib/db';
-import { loadSettings, siteVars } from '../lib/page';
+import { loadSettings, rewriteAssetUrls, siteVars, staticBase } from '../lib/page';
 import { createDemoOrder } from '../lib/order';
 import { qrPng } from '../lib/qr';
 import { clientIp, html, publicUrl, text } from '../lib/util';
@@ -39,6 +39,8 @@ function injectPage(shell: string, vars: Record<string, unknown>, pageTitle: str
     description: String(vars.description ?? ''),
     footer: String(vars.footer ?? ''),
     edition: String(vars.edition ?? ''),
+    // 前台 JS 里硬编码的图片路径（demo 页图标）据此拼 CDN 地址
+    resourceUrl: String(vars.resourceUrl ?? ''),
   };
   const title = pageTitle ? `${pageTitle} - ${settings.title}` : settings.title;
   const description = settings.description || '轻量、清晰的支付接入方案';
@@ -86,8 +88,9 @@ export async function handleSitePage(req: Request, env: Env, path: string): Prom
   const shell = await env.ASSETS.fetch(new URL(`/site/${page.file}`, req.url));
   if (!shell.ok) return text('前台构建产物缺失，请先执行 pnpm web:build', 500);
 
-  const vars = siteVars(await loadSettings(env));
-  const out = injectPage(await shell.text(), vars, page.title);
+  const settings = await loadSettings(env);
+  const vars = siteVars(settings);
+  const out = rewriteAssetUrls(injectPage(await shell.text(), vars, page.title), staticBase(settings, env));
   return new Response(out, {
     headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
   });

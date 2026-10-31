@@ -21,6 +21,28 @@ export function staticBase(cfg: Settings, env: Env): string {
 }
 
 /**
+ * 把 HTML 里的静态资源绝对路径前缀（/site/、/console/、/static/）重写到外部 CDN 基址。
+ *
+ * 背景：`resource_url` 原本只作用于服务端渲染的支付页图片（pay.ts 里拼 ${res}/static/…），
+ * 而前台 / 后台 SPA 的 JS/CSS/favicon 是 vite 构建时写死的绝对路径（/site/assets/…、
+ * /console/assets/…）。要让这些也走 CDN，就在这里做一次性字符串替换 —— 不用改 vite 配置，
+ * 也不用手工维护 hash 文件名。
+ *
+ * @param html   完整的 HTML 字符串
+ * @param base   资源基址（末尾不带斜杠），为空串表示不重写（保持相对路径）
+ */
+export function rewriteAssetUrls(html: string, base: string): string {
+  if (!base) return html;
+  const prefix = base.replace(/\/+$/, '');
+  // 只匹配 src/href 属性里以 /site/、/console/、/static/ 开头的路径，
+  // 避免误伤正文里的字符串或其它绝对路径。
+  return html.replace(
+    /(src|href)="(\/(?:site|console|static)\/[^"]*)"/g,
+    (_m, attr: string, path: string) => `${attr}="${prefix}${path}"`
+  );
+}
+
+/**
  * 站点 host（不带协议）：配置了 site.url 就用它，否则取当前请求的 host。
  * 监控端扫码绑定的地址要靠它，配置里写的是域名时比 req 更准。
  */
@@ -54,6 +76,12 @@ export function siteVars(s: Settings): Record<string, unknown> {
     footer: s['footer'] ?? '',
     edition: s['edition'] ?? 'v1.0.0',
     url: s['url'] ?? '',
+    // 静态资源根地址：前台 JS 里硬编码的图片路径（demo 页图标）据此拼 CDN 地址。
+    // 空串 = 保持相对路径。这里直接取 config 原值（末尾斜杠由前台处理），
+    // 与 staticBase 的语义一致（resource_url 存在就用它，否则回退 RESOURCE_URL）。
+    resourceUrl: Object.prototype.hasOwnProperty.call(s, 'resource_url')
+      ? (s['resource_url'] ?? '')
+      : '',
   };
 }
 

@@ -2,14 +2,14 @@ import { useState } from 'react';
 import { ArrowRight, Check } from 'lucide-react';
 import { SiteLayout } from '@/components/site-layout';
 import { Button } from '@/components/ui/button';
-import { getSiteSettings } from '@/lib/site';
+import { asset, getSiteSettings } from '@/lib/site';
 import { cn } from '@/lib/utils';
 
 const channels = [
-  { value: 'wxpay', label: '微信支付', detail: 'WeChat Pay', icon: '/static/web/picture/wxpay.png' },
-  { value: 'alipay', label: '支付宝', detail: 'Alipay', icon: '/static/web/picture/alipay.png' },
-  { value: 'qqpay', label: 'QQ 钱包', detail: 'QQ Wallet', icon: '/site/images/qqpay-icon.png' },
-  { value: 'rmbpay', label: '数字人民币', detail: 'e-CNY', icon: '/static/web/picture/rmbpay.png' },
+  { value: 'wxpay', label: '微信支付', detail: 'WeChat Pay', icon: asset('/static/web/picture/wxpay.png') },
+  { value: 'alipay', label: '支付宝', detail: 'Alipay', icon: asset('/static/web/picture/alipay.png') },
+  { value: 'qqpay', label: 'QQ 钱包', detail: 'QQ Wallet', icon: asset('/site/images/qqpay-icon.png') },
+  { value: 'rmbpay', label: '数字人民币', detail: 'e-CNY', icon: asset('/static/web/picture/rmbpay.png') },
 ];
 
 function orderNumber() {
