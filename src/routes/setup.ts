@@ -31,6 +31,19 @@ const STYLE = `
     input{width:100%;height:38px;padding:0 12px;border:1px solid #d8dbe0;border-radius:8px;font-size:14px;outline:none}
     input:focus{border-color:#2563eb;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
     .hint{margin-top:5px;font-size:12px;color:#9aa1ac}
+    /* 密码框：右侧留出眼睛按钮的位置 */
+    .pw{position:relative}
+    .pw input{padding-right:42px}
+    .pw-toggle{position:absolute;right:5px;top:50%;transform:translateY(-50%);
+               width:30px;height:30px;margin:0;padding:0;border:0;border-radius:6px;
+               display:flex;align-items:center;justify-content:center;
+               background:transparent;color:#9aa1ac;cursor:pointer}
+    .pw-toggle:hover{color:#374151;background:#f3f4f6}
+    .pw-toggle:focus-visible{outline:2px solid #93b4f7;outline-offset:1px}
+    .pw-toggle svg{width:18px;height:18px}
+    /* 默认只显示睁眼；闭眼由脚本切显（SVG 上挂 hidden 属性在 Chrome 里不生效，
+       所以统一用 display 控制，别改成 hidden） */
+    .pw-toggle .eye-off{display:none}
     button{width:100%;height:40px;margin-top:22px;border:0;border-radius:8px;background:#2563eb;color:#fff;font-size:14px;cursor:pointer}
     button:hover{background:#1d4ed8}
     .err{margin:0 0 16px;padding:10px 12px;border-radius:8px;background:#fef2f2;color:#b91c1c;font-size:13px}
@@ -48,6 +61,53 @@ function page(title: string, body: string): string {
 <body><div class="card">${body}</div></body></html>`;
 }
 
+/** 眼睛图标：默认睁眼（点击后明文），切到明文后换成闭眼 */
+const EYE_ON = `<svg class="eye-on" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const EYE_OFF = `<svg class="eye-off" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+  stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+  <path d="M2 12s3.6-7 10-7c1.6 0 3 .4 4.3 1.1M22 12s-3.6 7-10 7c-1.6 0-3-.4-4.3-1.1"/>
+  <path d="M9.9 9.9a3 3 0 0 0 4.2 4.2"/><path d="M3 3l18 18"/></svg>`;
+
+/**
+ * 带「小眼睛」的密码框：点击在明文/密文之间切换。
+ *
+ * 这个页面是服务端直出的 HTML，用不了后台那套 React 的 PasswordInput，
+ * 所以这里用原生 button + 几行内联脚本实现，不引任何依赖。
+ */
+function pwField(id: string, name: string, label: string, hint = ''): string {
+  return `<label for="${id}">${label}</label>
+      <div class="pw">
+        <input id="${id}" name="${name}" type="password" autocomplete="new-password" required>
+        <button type="button" class="pw-toggle" data-pw-toggle="${id}"
+                aria-label="显示密码" aria-pressed="false" title="显示密码">${EYE_ON}${EYE_OFF}</button>
+      </div>${hint ? `\n      <div class="hint">${hint}</div>` : ''}`;
+}
+
+/** 切换密码可见性；用事件委托写法兼容多次渲染，也不依赖任何框架 */
+const PW_SCRIPT = `<script>
+(function () {
+  var btns = document.querySelectorAll('[data-pw-toggle]');
+  Array.prototype.forEach.call(btns, function (btn) {
+    btn.addEventListener('click', function () {
+      var input = document.getElementById(btn.getAttribute('data-pw-toggle'));
+      if (!input) return;
+      var show = input.type === 'password';
+      input.type = show ? 'text' : 'password';
+      btn.setAttribute('aria-pressed', show ? 'true' : 'false');
+      btn.setAttribute('aria-label', show ? '隐藏密码' : '显示密码');
+      btn.setAttribute('title', show ? '隐藏密码' : '显示密码');
+      var on = btn.querySelector('.eye-on');
+      var off = btn.querySelector('.eye-off');
+      if (on) on.style.display = show ? 'none' : 'block';
+      if (off) off.style.display = show ? 'block' : 'none';
+      input.focus();
+    });
+  });
+})();
+</script>`;
+
 function formPage(token: string, err = '', v: Record<string, string> = {}): string {
   const val = (k: string, d = '') => esc(v[k] ?? d);
   return page(
@@ -57,26 +117,24 @@ function formPage(token: string, err = '', v: Record<string, string> = {}): stri
     ${err ? `<p class="err">${esc(err)}</p>` : ''}
     <form method="post" action="/setup">
       ${token ? `<input type="hidden" name="token" value="${esc(token)}">` : ''}
-      <label>管理员账号</label>
-      <input name="username" value="${val('username', 'admin')}" autocomplete="username" required>
+      <label for="username">管理员账号</label>
+      <input id="username" name="username" value="${val('username', 'admin')}" autocomplete="username" required>
       <div class="hint">3–20 位，字母数字下划线</div>
 
-      <label>登录密码</label>
-      <input name="password" type="password" autocomplete="new-password" required>
-      <div class="hint">至少 8 位</div>
+      ${pwField('password', 'password', '登录密码', '至少 8 位')}
 
-      <label>确认密码</label>
-      <input name="password2" type="password" autocomplete="new-password" required>
+      ${pwField('password2', 'password2', '确认密码')}
 
-      <label>后台入口别名</label>
-      <input name="alias" value="${val('alias', 'admin')}" required>
+      <label for="alias">后台入口别名</label>
+      <input id="alias" name="alias" value="${val('alias', 'admin')}" required>
       <div class="hint">后台会挂在 <code>/{别名}</code>。建议别用 admin，改成只有你知道的字符串（之后可在 config 表调整）</div>
 
-      <label>站点名称</label>
-      <input name="sitename" value="${val('sitename', 'V免签')}" required>
+      <label for="sitename">站点名称</label>
+      <input id="sitename" name="sitename" value="${val('sitename', 'V免签')}" required>
 
       <button type="submit">完成初始化</button>
-    </form>`
+    </form>
+    ${PW_SCRIPT}`
   );
 }
 

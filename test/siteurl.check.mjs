@@ -207,6 +207,24 @@ eq(await appConfigOf({ key: 'KEY123' }, ''), '', '域名也没认到时返回空
     alias: 'myvault',
     sitename: '演示站',
   });
+
+  // 表单页：两个密码框都要有「小眼睛」，且默认只显示睁眼那个图标
+  const formHtml = await (await handleSetup(
+    new Request('https://pay.example.com/setup', { method: 'GET' }),
+    env
+  )).text();
+  eq((formHtml.match(/data-pw-toggle=/g) ?? []).length, 2, '两个密码框都有小眼睛');
+  eq(
+    formHtml.includes('.pw-toggle .eye-off{display:none}'),
+    true,
+    '闭眼图标默认隐藏（用 display 控制 —— SVG 上的 hidden 属性在 Chrome 不生效）'
+  );
+  eq(
+    /<button type="button" class="pw-toggle"/.test(formHtml),
+    true,
+    '小眼睛是 type=button，不会误提交表单'
+  );
+
   const res = await handleSetup(
     new Request('https://pay.example.com/setup', { method: 'POST', body: form }),
     env
