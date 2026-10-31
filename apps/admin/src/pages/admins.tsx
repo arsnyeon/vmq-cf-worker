@@ -3,8 +3,6 @@ import { CrudPage, StatusBadge, type CrudConfig } from '@/components/crud-page';
 interface Admin {
   id: number;
   username: string;
-  phone: string;
-  email: string;
   role: string;
   status: number;
   created_at: string;
@@ -19,8 +17,6 @@ const config: CrudConfig<Admin> = {
     { key: 'id', label: 'ID', className: 'w-12 text-muted-foreground tabular-nums' },
     { key: 'username', label: '账号' },
     { key: 'role', label: '角色' },
-    { key: 'phone', label: '手机' },
-    { key: 'email', label: '邮箱' },
     { key: 'status', label: '状态', render: (r) => <StatusBadge value={r.status} /> },
     { key: 'login_time', label: '最后登录', className: 'text-xs text-muted-foreground' },
   ],
@@ -37,8 +33,6 @@ const config: CrudConfig<Admin> = {
     },
     { name: 'password', label: '密码', type: 'password', hint: '编辑时留空则不修改' },
     { name: 'repassword', label: '确认密码', type: 'password' },
-    { name: 'phone', label: '手机' },
-    { name: 'email', label: '邮箱' },
     {
       name: 'status',
       label: '状态',
@@ -49,14 +43,12 @@ const config: CrudConfig<Admin> = {
       ],
     },
   ],
-  empty: { username: '', role: '2', password: '', repassword: '', phone: '', email: '', status: '1' },
+  empty: { username: '', role: '2', password: '', repassword: '', status: '1' },
   toForm: (r) => ({
     username: r.username,
     role: String(r.role === '超级管理员' ? 1 : 2),
     password: '',
     repassword: '',
-    phone: r.phone ?? '',
-    email: r.email ?? '',
     status: String(r.status),
   }),
   statusKey: 'status',

@@ -198,13 +198,19 @@ try {
   const listAfter = await call('GET', '/admins?page=1&limit=50');
   const row = (listAfter.json?.data ?? []).find((x) => x.username === uname);
   check('新增后能查到', !!row, row ? `id=${row.id}` : '');
+  // 手机 / 邮箱已整块下线：管理员记录里不该再有这两个字段
+  check(
+    '管理员记录不含手机/邮箱',
+    !!row && !('phone' in row) && !('email' in row),
+    Object.keys(row ?? {}).join(',')
+  );
 
   if (row) {
     cleanup(async () => {
       await call('DELETE', `/admins?id=${row.id}`);
     });
     const edited = await call('PUT', `/admins/${row.id}`, {
-      username: uname, role: 2, status: 1, phone: '13800000000',
+      username: uname, role: 2, status: 1,
     });
     check('修改', edited.json?.code === 1, edited.json?.msg ?? '');
     const off = await call('PATCH', `/admins/${row.id}/status`, { status: 0 });
@@ -346,8 +352,12 @@ try {
   const prof = await call('GET', '/profile');
   check('/profile 读取', prof.json?.code === 1 && prof.json?.data?.username === USER);
 
-  // 资料页已移除手机/邮箱：保存时只改头像，请求里就算带了这两个字段也不能覆盖
-  sqlRun(`UPDATE admins SET phone='13800000000', email='a@b.co' WHERE username='${USER}';`);
+  // 手机 / 邮箱已整块下线：/profile 不再返回，保存时带了也会被忽略
+  check(
+    '/profile 不返回手机/邮箱',
+    prof.json?.data && !('phone' in prof.json.data) && !('email' in prof.json.data),
+    Object.keys(prof.json?.data ?? {}).join(',')
+  );
   const profSave = await call('PUT', '/profile', {
     phone: '19999999999',
     email: 'x@y.z',
@@ -355,11 +365,6 @@ try {
   });
   check('/profile 保存', profSave.json?.code === 1, profSave.json?.msg ?? '');
   const profAfter = await call('GET', '/profile');
-  check(
-    '资料保存不动手机/邮箱',
-    profAfter.json?.data?.phone === '13800000000' && profAfter.json?.data?.email === 'a@b.co',
-    `${profAfter.json?.data?.phone} / ${profAfter.json?.data?.email}`
-  );
   check('资料保存写入头像', profAfter.json?.data?.head_img === '/upload/test.png', profAfter.json?.data?.head_img ?? '');
   const weakPw = await call('PUT', '/profile/password', { password: '123', password_again: '123' });
   check('弱密码被拒', weakPw.json?.code === 0, weakPw.json?.msg ?? '');

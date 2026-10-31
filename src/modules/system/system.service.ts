@@ -49,8 +49,6 @@ export async function saveAdmin(
   const repassword = p['repassword'] ?? '';
   const role = Number(p['role'] ?? 2) || 2;
   const status = Number(p['status'] ?? 1) || 0;
-  const phone = strVal(p, 'phone');
-  const email = strVal(p, 'email');
   // 头像留空时用默认图（与线上一致：/static/admin/images/head.jpg）
   const headImg = strVal(p, 'head_img') || DEFAULT_HEAD_IMG;
 
@@ -61,7 +59,7 @@ export async function saveAdmin(
   }
   if (await repo.usernameTaken(env.DB, username, id)) return fail('用户名已存在');
 
-  const data = { username, role, status, phone, email, head_img: headImg };
+  const data = { username, role, status, head_img: headImg };
 
   if (id) {
     await repo.updateAdmin(env.DB, id, data, password ? await hashPassword(password) : undefined);
@@ -96,8 +94,8 @@ export async function removeAdmins(
 /**
  * 修改自己的资料。
  *
- * 只更新头像：手机 / 邮箱已从「个人资料」页移除，这里不再写这两列 ——
- * 否则前端不传字段时会被写成空串，把「管理员」页里维护的联系方式清掉。
+ * 只更新头像。手机 / 邮箱字段已整块下线（建表脚本里也没有这两列），
+ * 资料接口只负责 head_img。
  */
 export async function saveProfile(
   env: Env,

@@ -15,7 +15,5 @@ export function toListRow(r: OrderListRow): Record<string, unknown> {
     // trade_no 是旧版模板的字段名（= order_id），保留以免前端改绑定
     trade_no: r.order_id,
     type: PAY_TYPE_LABEL[Number(r.type)] ?? String(r.type),
-    // 旧版订单列表有个「email」列，本项目没有，给空串占位（模板按列渲染）
-    email: '',
   };
 }

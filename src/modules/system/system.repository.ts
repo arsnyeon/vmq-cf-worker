@@ -12,8 +12,6 @@ import { marks } from '../shared/sql';
 export interface AdminRow {
   id: number;
   username: string;
-  phone: string;
-  email: string;
   role: number;
   head_img: string;
   status: number;
@@ -21,7 +19,7 @@ export interface AdminRow {
   login_time: number;
 }
 
-const ADMIN_LIST_COLUMNS = 'id, username, phone, email, role, head_img, status, created_at, login_time';
+const ADMIN_LIST_COLUMNS = 'id, username, role, head_img, status, created_at, login_time';
 
 export async function listAdmins(
   db: D1Database,
@@ -63,7 +61,7 @@ export async function findAdmin(
   id: number
 ): Promise<Record<string, unknown> | null> {
   const row = await db
-    .prepare('SELECT id, username, phone, email, role, head_img, status FROM admins WHERE id = ?')
+    .prepare('SELECT id, username, role, head_img, status FROM admins WHERE id = ?')
     .bind(id)
     .first();
   return (row as Record<string, unknown>) ?? null;
@@ -104,8 +102,6 @@ export interface AdminInput {
   username: string;
   role: number;
   status: number;
-  phone: string;
-  email: string;
   head_img: string;
 }
 
@@ -117,20 +113,10 @@ export async function insertAdmin(
   const t = now();
   const r = await db
     .prepare(
-      'INSERT INTO admins (username, password_hash, role, status, phone, email, head_img, created_at, update_time) ' +
-        'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      'INSERT INTO admins (username, password_hash, role, status, head_img, created_at, update_time) ' +
+        'VALUES (?, ?, ?, ?, ?, ?, ?)'
     )
-    .bind(
-      data.username,
-      passwordHash,
-      data.role,
-      data.status,
-      data.phone,
-      data.email,
-      data.head_img,
-      t,
-      t
-    )
+    .bind(data.username, passwordHash, data.role, data.status, data.head_img, t, t)
     .run();
   return Number(r.meta.last_row_id ?? 0);
 }
@@ -146,27 +132,17 @@ export async function updateAdmin(
   if (passwordHash) {
     await db
       .prepare(
-        'UPDATE admins SET username = ?, role = ?, status = ?, phone = ?, email = ?, head_img = ?, password_hash = ?, update_time = ? WHERE id = ?'
+        'UPDATE admins SET username = ?, role = ?, status = ?, head_img = ?, password_hash = ?, update_time = ? WHERE id = ?'
       )
-      .bind(
-        data.username,
-        data.role,
-        data.status,
-        data.phone,
-        data.email,
-        data.head_img,
-        passwordHash,
-        t,
-        id
-      )
+      .bind(data.username, data.role, data.status, data.head_img, passwordHash, t, id)
       .run();
     return;
   }
   await db
     .prepare(
-      'UPDATE admins SET username = ?, role = ?, status = ?, phone = ?, email = ?, head_img = ?, update_time = ? WHERE id = ?'
+      'UPDATE admins SET username = ?, role = ?, status = ?, head_img = ?, update_time = ? WHERE id = ?'
     )
-    .bind(data.username, data.role, data.status, data.phone, data.email, data.head_img, t, id)
+    .bind(data.username, data.role, data.status, data.head_img, t, id)
     .run();
 }
 
@@ -201,7 +177,7 @@ export async function profileOf(
   id: number
 ): Promise<Record<string, unknown> | null> {
   const row = await db
-    .prepare('SELECT id, username, phone, email, head_img, status FROM admins WHERE id = ?')
+    .prepare('SELECT id, username, head_img, status FROM admins WHERE id = ?')
     .bind(id)
     .first();
   return (row as Record<string, unknown>) ?? null;

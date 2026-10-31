@@ -32,7 +32,6 @@ interface OrderRow {
   create_time: string;
   pay_time: string;
   notify_attempts: number;
-  email: string;
 }
 
 const STATUS = [
@@ -217,8 +216,7 @@ export function OrdersPage() {
               <TableHead>支付方式</TableHead>
               <TableHead className="text-right">金额</TableHead>
               <TableHead className="whitespace-nowrap text-right">实付金额</TableHead>
-              <TableHead>补单邮箱</TableHead>
-              <TableHead>状态</TableHead>
+                <TableHead>状态</TableHead>
               <TableHead>添加时间</TableHead>
               <TableHead>支付时间</TableHead>
               <TableHead className="sticky right-0 z-10 w-32 border-b border-l border-border bg-card text-right shadow-[-6px_0_8px_-8px_rgba(0,0,0,0.15)]">
@@ -228,11 +226,11 @@ export function OrdersPage() {
           </TableHeader>
           <TableBody>
             {query.isLoading ? (
-              <EmptyRow colSpan={14} text="加载中…" />
+              <EmptyRow colSpan={13} text="加载中…" />
             ) : query.error ? (
-              <EmptyRow colSpan={14} text={`加载失败：${String(query.error)}`} />
+              <EmptyRow colSpan={13} text={`加载失败：${String(query.error)}`} />
             ) : rows.length === 0 ? (
-              <EmptyRow colSpan={14} />
+              <EmptyRow colSpan={13} />
             ) : (
               rows.map((r) => {
                 const st = STATUS.find((x) => x.value === String(r.status));
@@ -270,7 +268,6 @@ export function OrdersPage() {
                     </TableCell>
                     <TableCell className="text-right tabular-nums">{r.money}</TableCell>
                     <TableCell className="text-right tabular-nums">{r.truemoney}</TableCell>
-                    <TableCell className="text-xs text-muted-foreground">{r.email || '—'}</TableCell>
                     <TableCell>
                       <Badge variant={st?.variant ?? 'muted'}>{st?.label ?? r.status}</Badge>
                     </TableCell>

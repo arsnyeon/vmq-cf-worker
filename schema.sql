@@ -106,8 +106,6 @@ CREATE TABLE IF NOT EXISTS admins (
   username      TEXT    NOT NULL UNIQUE,
   password_hash TEXT    NOT NULL,           -- pbkdf2$迭代次数$salt$hash
   status        INTEGER NOT NULL DEFAULT 1, -- 1 启用 / 0 禁用
-  phone         TEXT    NOT NULL DEFAULT '',
-  email         TEXT    NOT NULL DEFAULT '',
   role          INTEGER NOT NULL DEFAULT 1,
   head_img      TEXT    NOT NULL DEFAULT '',
   created_at    INTEGER NOT NULL DEFAULT 0,

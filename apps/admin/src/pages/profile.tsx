@@ -21,7 +21,7 @@ interface Profile {
 
 export function ProfilePage() {
   const qc = useQueryClient();
-  // 手机 / 邮箱已从本页移除：个人资料只管头像，联系方式统一去「管理员」页维护
+  // 手机 / 邮箱字段已整块下线，个人资料只剩头像
   const [form, setForm] = useState({ head_img: '' });
   const [pw, setPw] = useState({ password: '', password_again: '' });
 
