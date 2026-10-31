@@ -14,6 +14,10 @@ import { api, ApiError } from '@/lib/api';
 interface ConfigPayload {
   config: Record<string, string>;
   secretSet: Record<string, boolean>;
+  /** 密钥不回传原值，只给「前 6 位 + 长度」，供页面展示「装的时候生成的那把」 */
+  secretInfo?: Record<string, { mask: string; len: number }>;
+  /** 用户没填过时的默认值（目前只有支付网关地址 = 本站域名） */
+  defaults?: Record<string, string>;
 }
 
 interface ConfigField {
@@ -61,16 +65,24 @@ const GROUPS: ConfigGroup[] = [
         name: 'key',
         label: '通讯密钥',
         secret: true,
-        hint: '监控端 App 里填的就是它',
+        hint: '监控端 App 和商户下单共用这一把：App 的心跳/推送、商户下单与回调验签都用它。安装时自动生成 32 位，改动前请先同步 App 与商户，否则验签会全部失败。',
       },
       {
         name: 'epaykey_ali',
         label: '商户密钥（易支付）',
         secret: true,
-        hint: '易支付网关的商户密钥',
+        hint: '历史兼容项，仅当上面的通讯密钥为空时才生效（取值顺序 app_key → key → epaykey_ali）。本站不主动对接易支付网关，一般留空即可。',
       },
-      { name: 'epayid_ali', label: '商户 ID' },
-      { name: 'epayurl_ali', label: '支付网关地址' },
+      {
+        name: 'epayid_ali',
+        label: '商户 ID',
+        hint: '商户下单时随订单记录并原样回传；本站不做比对，可与商户约定任意值。',
+      },
+      {
+        name: 'epayurl_ali',
+        label: '支付网关地址',
+        hint: '给商户对接用的网关根地址（含协议）。留空则使用本站域名；本站不会主动请求它。',
+      },
     ],
   },
 ];
@@ -85,7 +97,13 @@ export function ConfigPage() {
   });
 
   useEffect(() => {
-    if (cfg.data?.config) setValues({ ...cfg.data.config });
+    if (!cfg.data) return;
+    // 用库里已有值打底；用户没填过的（支付网关地址）补上后端给的默认值
+    const next: Record<string, string> = { ...cfg.data.config };
+    for (const [k, v] of Object.entries(cfg.data.defaults ?? {})) {
+      if (!next[k]) next[k] = v;
+    }
+    setValues(next);
   }, [cfg.data]);
 
   const save = useMutation({
@@ -111,6 +129,7 @@ export function ConfigPage() {
   }
 
   const secretSet = cfg.data?.secretSet ?? {};
+  const secretInfo = cfg.data?.secretInfo ?? {};
 
   return (
     <>
@@ -136,12 +155,6 @@ export function ConfigPage() {
                 <CardTitle>{g.title}</CardTitle>
               </CardHeader>
               <CardContent className="grid grid-cols-2 gap-3">
-                {g.id === 'secret' ? (
-                  <p className="col-span-2 rounded-md border border-border bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
-                    密钥只存在服务端，接口不会把原值回传，所以输入框始终是空的。
-                    上方标注「已配置」表示该项已有值；留空保存 = 保持不变，填入新值才会覆盖。
-                  </p>
-                ) : null}
                 {g.fields.map((f) => (
                   <div key={f.name} className={f.full ? 'col-span-2 space-y-1.5' : 'space-y-1.5'}>
                     <div className="flex items-center justify-between gap-2">
@@ -150,6 +163,12 @@ export function ConfigPage() {
                         secretSet[f.name] ? (
                           <span className="flex items-center gap-1 text-xs text-emerald-600 dark:text-emerald-400">
                             <CheckCircle2 className="size-3.5" /> 已配置
+                            {/* 接口不回传原值，这里只展示掩码，确认是不是安装时生成的那把 */}
+                            {secretInfo[f.name] ? (
+                              <code className="font-normal text-muted-foreground">
+                                {secretInfo[f.name].mask}（{secretInfo[f.name].len} 位）
+                              </code>
+                            ) : null}
                           </span>
                         ) : (
                           <span className="text-xs text-muted-foreground">未配置</span>

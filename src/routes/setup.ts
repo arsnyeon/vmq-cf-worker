@@ -14,7 +14,7 @@
 import type { Env } from '../lib/db';
 import { setAdminAliasCache } from '../lib/db';
 import { hashPassword } from '../lib/auth';
-import { externalHost, externalProto, html, randHex, text } from '../lib/util';
+import { externalHost, externalProto, html, publicUrl, randHex, text } from '../lib/util';
 
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -77,20 +77,6 @@ function formPage(token: string, err = '', v: Record<string, string> = {}): stri
 
       <button type="submit">完成初始化</button>
     </form>`
-  );
-}
-
-function donePage(alias: string, key: string): string {
-  return page(
-    '初始化完成',
-    `<h1>初始化完成</h1>
-    <p class="sub">以下信息只显示这一次，请截图或保存。</p>
-    <div class="ok">
-      <p style="margin:0 0 8px"><b>后台地址</b><br><code>/${esc(alias)}/login</code></p>
-      <p style="margin:0"><b>通讯密钥</b>（监控端 App 绑定用）<br><code>${esc(key)}</code></p>
-    </div>
-    <p class="hint" style="margin-top:16px">通讯密钥之后也能在后台「系统设置」里查看。请先登录并修改密码。</p>
-    <p style="margin-top:18px"><a href="/${esc(alias)}/login">前往登录 →</a></p>`
   );
 }
 
@@ -206,5 +192,7 @@ export async function handleSetup(req: Request, env: Env): Promise<Response> {
   }
 
   setAdminAliasCache(alias);
-  return html(donePage(alias, commKey));
+  // 初始化完成直接进登录页：密钥等配置都在后台「系统配置 → 密钥管理」里，
+  // 不再中间插一页只显示一次的「初始化完成」（容易让人以为密钥丢了就找不回来）。
+  return Response.redirect(publicUrl(req, `/${alias}/login`), 302);
 }

@@ -211,7 +211,12 @@ eq(await appConfigOf({ key: 'KEY123' }, ''), '', '域名也没认到时返回空
     new Request('https://pay.example.com/setup', { method: 'POST', body: form }),
     env
   );
-  eq(res.status, 200, '/setup 提交成功');
+  eq(res.status, 302, '/setup 提交后 302 跳转');
+  eq(
+    res.headers.get('location'),
+    'https://pay.example.com/myvault/login',
+    '/setup 跳到登录页（带别名）'
+  );
   const kv = Object.fromEntries(written.map((w) => [w.binds[0], w.binds[1]]));
   eq(kv['url'], 'https://pay.example.com', '/setup 写入站点地址（不含尾斜杠）');
   eq(kv['title'], '演示站', '/setup 写入站点名称');
@@ -220,7 +225,7 @@ eq(await appConfigOf({ key: 'KEY123' }, ''), '', '域名也没认到时返回空
 
   // 反代场景：对外域名只在 X-Forwarded-Host 里，不能把 Worker 自己的域名写进去
   written.length = 0;
-  await handleSetup(
+  const res2 = await handleSetup(
     new Request('https://vmq.internal.workers.dev/setup', {
       method: 'POST',
       body: form,
@@ -230,6 +235,11 @@ eq(await appConfigOf({ key: 'KEY123' }, ''), '', '域名也没认到时返回空
   );
   const kv2 = Object.fromEntries(written.map((w) => [w.binds[0], w.binds[1]]));
   eq(kv2['url'], 'https://pay.example.com', '/setup 认 X-Forwarded-Host');
+  eq(
+    res2.headers.get('location'),
+    'https://pay.example.com/myvault/login',
+    '跳转地址也用对外域名'
+  );
 }
 
 console.log(bad === 0 ? '✓ 站点域名 / APP 配置全部通过' : `✗ ${bad} 项失败`);
