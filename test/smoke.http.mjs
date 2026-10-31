@@ -102,9 +102,11 @@ if (!ALIAS) {
 console.log(`\n=== 本地静态资源（不再依赖外部站）===`);
 for (const [p, mustType] of [
   ['/favicon.ico', 'image'],
-  ['/static/pay/3/img/alipay.jpg', 'image/jpeg'],
+  ['/static/pay/3/img/alipay-text.png', 'image/png'],
+  ['/static/pay/3/img/wxpay-text.png', 'image/png'],
   ['/static/pay/3/img/pay_ok.png', 'image/png'],
-  ['/static/web/picture/alipay.svg', 'image/svg'],
+  ['/static/web/picture/alipay.png', 'image/png'],
+  ['/static/web/picture/wxpay.png', 'image/png'],
 ]) {
   const r = await get(p);
   check(p, r.status === 200 && r.type.includes(mustType), `${r.status} ${r.type}`);

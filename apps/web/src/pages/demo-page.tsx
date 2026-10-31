@@ -6,8 +6,8 @@ import { getSiteSettings } from '@/lib/site';
 import { cn } from '@/lib/utils';
 
 const channels = [
-  { value: 'wxpay', label: '微信支付', detail: 'WeChat Pay', icon: '/static/web/picture/wx_pay.svg' },
-  { value: 'alipay', label: '支付宝', detail: 'Alipay', icon: '/static/web/picture/alipay.svg' },
+  { value: 'wxpay', label: '微信支付', detail: 'WeChat Pay', icon: '/static/web/picture/wxpay.png' },
+  { value: 'alipay', label: '支付宝', detail: 'Alipay', icon: '/static/web/picture/alipay.png' },
   { value: 'qqpay', label: 'QQ 钱包', detail: 'QQ Wallet', icon: '/site/images/qqpay-icon.png' },
   { value: 'rmbpay', label: '数字人民币', detail: 'e-CNY', icon: '/static/web/picture/rmbpay.png' },
 ];
