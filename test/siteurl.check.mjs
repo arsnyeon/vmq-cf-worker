@@ -5,18 +5,21 @@
  * 盯的是一条很容易错的链路：后台「通道管理」给每个通道生成的
  * 「APP扫码配置 / APP手动配置」字符串必须是
  *
- *     域名/通讯密钥/通道id,支付类型       例：pay.example.com/3f9a…/8,1
+ *     https://域名/通讯密钥/通道id,支付类型     例：https://pay.example.com/3f9a…/8,1
  *
- * 三处必须同时对，错一处 App 就绑不上或者心跳/推送验签失败：
- *   1. 域名**不能带协议** —— App 自己拼的是 http://host/appPush
- *   2. 域名优先取后台「站点地址」(config.url)，没配才用当前请求的 host
+ * （扫码与手动共用同一个字段，所以两者必然一致 —— 这条也在这里断言。）
+ *
+ * 四处必须同时对，错一处 App 就绑不上或者心跳/推送验签失败：
+ *   1. **必须带 https://** —— App 拿它当地址去请求 /appPush，缺协议发不出去
+ *   2. 域名优先取后台「站点地址」(config.url)，没配才用当前请求的 origin
  *   3. 密钥必须与 /appPush 验签同源（appSecret：app_key → key → epaykey_ali）
+ *   4. 域名或密钥缺一个就整串返回空，不给半截字符串
  */
 import { handleSetup } from '../src/routes/setup.ts';
 import { listPassages } from '../src/modules/passages/passage.service.ts';
 import { appSecret } from '../src/lib/db.ts';
 import { monitorSign, verifyMonitor } from '../src/lib/sign.ts';
-import { hostOf } from '../src/lib/util.ts';
+import { hostOf, originOf } from '../src/lib/util.ts';
 
 let bad = 0;
 function eq(got, want, label) {
@@ -35,6 +38,16 @@ eq(hostOf('https://pay.example.com:8443'), 'pay.example.com:8443', 'hostOf 保�
 eq(hostOf('  https://pay.example.com  '), 'pay.example.com', 'hostOf 去首尾空格');
 eq(hostOf(''), '', 'hostOf 空串');
 eq(hostOf('   '), '', 'hostOf 纯空格');
+
+/* ---------------- originOf：绑定串必须带 https:// ---------------- */
+eq(originOf('https://pay.example.com/'), 'https://pay.example.com', 'originOf 已带 https');
+eq(originOf('pay.example.com'), 'https://pay.example.com', 'originOf 裸域名补 https');
+eq(originOf('pay.example.com/sub/'), 'https://pay.example.com', 'originOf 去路径');
+eq(originOf('http://pay.example.com'), 'https://pay.example.com', 'originOf 线上 http 也升级成 https');
+eq(originOf('http://localhost:8787'), 'http://localhost:8787', 'originOf 本机保留 http');
+eq(originOf('http://127.0.0.1:8787'), 'http://127.0.0.1:8787', 'originOf 127.0.0.1 保留 http');
+eq(originOf('localhost:8787'), 'https://localhost:8787', 'originOf 本机但没写 http 就给 https');
+eq(originOf(''), '', 'originOf 空串');
 
 /* ---------------- 假 D1：只实现列表 + 读 config ---------------- */
 function makeEnv(config = {}, rows = []) {
@@ -93,34 +106,51 @@ async function appConfigOf(config, reqHost = '') {
 /* ---------------- 域名：优先 config.url，且必须剥掉协议 ---------------- */
 eq(
   await appConfigOf({ url: 'https://pay.example.com/', key: 'KEY123' }),
-  'pay.example.com/KEY123/8,1',
-  '站点地址带协议也能剥干净'
+  'https://pay.example.com/KEY123/8,1',
+  '绑定串带 https:// 协议'
 );
 eq(
   await appConfigOf({ url: 'https://pay.example.com/vmq/', key: 'KEY123' }),
-  'pay.example.com/KEY123/8,1',
+  'https://pay.example.com/KEY123/8,1',
   '站点地址带子路径只取域名'
 );
 eq(
-  await appConfigOf({ key: 'KEY123' }, 'p9.example.workers.dev'),
-  'p9.example.workers.dev/KEY123/8,1',
-  '未配站点地址时用请求 host 兜底'
+  await appConfigOf({ url: 'pay.example.com', key: 'KEY123' }),
+  'https://pay.example.com/KEY123/8,1',
+  '站点地址没写协议也能补上 https'
 );
 eq(
-  await appConfigOf({ url: 'https://pay.example.com/', key: 'KEY123' }, 'p9.example.workers.dev'),
-  'pay.example.com/KEY123/8,1',
-  '配了站点地址就优先于请求 host'
+  await appConfigOf({ key: 'KEY123' }, 'https://p9.example.workers.dev'),
+  'https://p9.example.workers.dev/KEY123/8,1',
+  '未配站点地址时用请求 origin 兜底'
+);
+eq(
+  await appConfigOf({ url: 'https://pay.example.com/', key: 'KEY123' }, 'https://p9.example.workers.dev'),
+  'https://pay.example.com/KEY123/8,1',
+  '配了站点地址就优先于请求 origin'
+);
+// 管理员是用 http 打开后台的（没开 Always Use HTTPS）：绑定串仍必须是 https
+eq(
+  await appConfigOf({ key: 'KEY123' }, 'http://pay.example.com'),
+  'https://pay.example.com/KEY123/8,1',
+  'http 访问也生成 https 绑定串'
+);
+// 本机调试地址保留 http，否则本地根本连不上
+eq(
+  await appConfigOf({ url: 'http://localhost:8787', key: 'KEY123' }),
+  'http://localhost:8787/KEY123/8,1',
+  '本机调试保留 http'
 );
 
 /* ---------------- 密钥：取值顺序必须和 /appPush 验签一致 ---------------- */
 eq(
   await appConfigOf({ url: 'https://pay.example.com/', app_key: 'NEW', key: 'OLD' }),
-  'pay.example.com/NEW/8,1',
+  'https://pay.example.com/NEW/8,1',
   'app_key 优先于 key'
 );
 eq(
   await appConfigOf({ url: 'https://pay.example.com/', epaykey_ali: 'LEGACY' }),
-  'pay.example.com/LEGACY/8,1',
+  'https://pay.example.com/LEGACY/8,1',
   '只剩历史 epaykey_ali 也能用'
 );
 
@@ -128,7 +158,8 @@ eq(
 {
   const env = makeEnv({ url: 'https://pay.example.com/', key: 'PUSHKEY' }, [ROW]);
   const cfg = (await listPassages(env, { limit: '10' }, '')).data[0].app_config;
-  const [, emittedKey] = cfg.split('/');
+  // 'https://host/KEY/8,1' → 取 path 第一段
+  const emittedKey = new URL(cfg).pathname.split('/')[1];
   const t = '1761900000';
   const pid = '8';
   const sign = monitorSign([t, pid], emittedKey); // App 端心跳签名
@@ -136,7 +167,7 @@ eq(
 }
 
 /* ---------------- 缺域名或密钥 → 给空串，别给半截字符串 ---------------- */
-eq(await appConfigOf({ url: 'https://pay.example.com/' }, 'req.example.com'), '', '没配密钥返回空');
+eq(await appConfigOf({ url: 'https://pay.example.com/' }, 'https://req.example.com'), '', '没配密钥返回空');
 eq(await appConfigOf({ key: 'KEY123' }, ''), '', '域名也没认到时返回空');
 
 /* ---------------- /setup：初始化要顺手把站点地址写进 config ---------------- */

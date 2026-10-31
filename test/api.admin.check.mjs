@@ -252,8 +252,8 @@ try {
     check('按状态+支付模式筛选', flt2.json?.code === 0, `count=${flt2.json?.count}`);
     const flt3 = await call('GET', '/passages?page=1&limit=50&start=2099-01-01&end=2099-12-31');
     check('按时间范围筛选（未来=0 条）', flt3.json?.code === 0 && flt3.json?.count === 0, `count=${flt3.json?.count}`);
-    // APP 扫码配置必须是「域名/通讯密钥/通道id,支付类型」：
-    // 域名不带协议、密钥必须与 /appPush 验签同源，否则监控端 App 绑上了也签不过。
+    // APP 扫码 / 手动配置必须是「https://域名/通讯密钥/通道id,支付类型」：
+    // 协议不能少（App 拿它当地址请求 /appPush）；只有本机调试才允许 http。
     const cfgUrl = (
       execFileSync('sqlite3', [DB, "SELECT v FROM config WHERE k='url'"], { encoding: 'utf8' }).trim() ||
       BASE
@@ -268,10 +268,12 @@ try {
       ],
       { encoding: 'utf8' }
     ).trim();
+    const isLocal = /^https?:\/\/(localhost|127\.0\.0\.1|\[::1\])(:|\/|$)/i.test(cfgUrl);
     const wantHost = cfgUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
-    const wantCfg = cfgKey ? `${wantHost}/${cfgKey}/${pr.id},${pr.old_type}` : '';
+    const wantProto = isLocal && /^http:\/\//i.test(cfgUrl) ? 'http' : 'https';
+    const wantCfg = cfgKey ? `${wantProto}://${wantHost}/${cfgKey}/${pr.id},${pr.old_type}` : '';
     check(
-      'APP 扫码配置格式（域名/密钥/通道id,支付类型）',
+      'APP 配置格式（协议/域名/密钥/通道id,支付类型）',
       pr.app_config === wantCfg,
       `${pr.app_config} （期望 ${wantCfg || '空'}）`
     );

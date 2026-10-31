@@ -2,7 +2,7 @@
  * 通道业务：列表、保存、启停、删除。
  */
 import { appSecret, getConfig, type Env } from '../../lib/db';
-import { hostOf } from '../../lib/util';
+import { originOf } from '../../lib/util';
 import type { ApiResult } from '../../http/respond';
 import { fail, ok, table } from '../../http/respond';
 import { filterVal, idsOf, intVal, pageArgs } from '../../http/request';
@@ -14,8 +14,8 @@ import { toListRow } from './passage.presenter';
 export async function listPassages(
   env: Env,
   p: Record<string, string>,
-  /** 当前请求的对外 host；config.url 没配时用它兜底 */
-  reqHost = ''
+  /** 当前请求的对外 origin（含协议）；config.url 没配时用它兜底 */
+  reqOrigin = ''
 ): Promise<ApiResult> {
   const { limit, offset } = pageArgs(p);
   const num = (k: 'type' | 'code' | 'status' | 'is_status'): number | undefined => {
@@ -36,9 +36,9 @@ export async function listPassages(
     offset,
   });
 
-  // APP 扫码 / 手动配置：监控端绑定要用「域名/通讯密钥/通道id,支付类型」
+  // APP 扫码 / 手动配置：监控端绑定要用「https://域名/通讯密钥/通道id,支付类型」
   // 只有管理员能调这个接口，字符串给前端展示是预期行为（与旧后台一致）
-  const appBase = await appConfigBase(env, reqHost);
+  const appBase = await appConfigBase(env, reqOrigin);
   // 域名或密钥缺一个，整串就没意义（App 拿到也绑不上），给空串让前端显示「—」
   return table(
     rows.map((r) => ({
@@ -50,19 +50,21 @@ export async function listPassages(
 }
 
 /**
- * 监控端扫码配置的前缀：「域名/密钥/」，后面接「通道id,支付类型」。
+ * 监控端绑定串的前缀：「https://域名/密钥/」，后面接「通道id,支付类型」。
+ *
+ * 这一串同时供「APP扫码配置」（二维码内容）和「APP手动配置」（文本框）使用，
+ * 所以只在这里拼一次，两种方式必然一致。
  *
  * 三条硬约束（错一条，App 就绑不上或者签不过）：
- *   1. 域名**不带协议**：App 自己拼的是 http://host/appPush
- *   2. 域名取 config.url 的 host；没配就用当前请求的 host 兜底
+ *   1. **必须带 https://**：App 直接拿它当地址去请求 /appPush，缺协议就发不出去
+ *   2. 域名取 config.url；没配就用当前请求的 origin 兜底
  *   3. 密钥必须与 /appPush 验签用的是同一个（appSecret：app_key → key → epaykey_ali），
  *      否则 App 拿扫到的值去签名，服务端验签必然失败
  */
-async function appConfigBase(env: Env, fallbackHost = ''): Promise<string> {
-  const raw = (await getConfig(env, 'url')) || '';
-  const host = hostOf(raw) || hostOf(fallbackHost);
+async function appConfigBase(env: Env, fallbackOrigin = ''): Promise<string> {
+  const origin = originOf((await getConfig(env, 'url')) || '') || originOf(fallbackOrigin);
   const key = await appSecret(env);
-  return host && key ? `${host}/${key}/` : '';
+  return origin && key ? `${origin}/${key}/` : '';
 }
 
 /** 新增（id=0）或修改 */

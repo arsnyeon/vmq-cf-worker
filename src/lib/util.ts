@@ -130,6 +130,25 @@ export function hostOf(v: string): string {
   }
 }
 
+/**
+ * 取「协议 + 域名」：`pay.example.com/` → `https://pay.example.com`。
+ *
+ * 监控端 App 的绑定串必须带协议（它直接拿这个 origin 去请求 /appPush），
+ * 所以不能只给裸域名。
+ *
+ * 协议选择：**默认一律 https**。
+ * 只有本机调试地址（localhost / 127.0.0.1 / [::1]）且明确写了 http:// 时才保留 http。
+ * 这样即使管理员是用 http 打开的网站（没开 Always Use HTTPS），
+ * 生成的绑定串也不会变成 http —— 新版 Android 默认禁止明文请求，会直接连不上。
+ */
+export function originOf(v: string): string {
+  const host = hostOf(v);
+  if (!host) return '';
+  const local = /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/i.test(host);
+  const explicitHttp = /^http:\/\//i.test(v.trim());
+  return local && explicitHttp ? `http://${host}` : `https://${host}`;
+}
+
 /** 定长比较，避免签名比较的时序差异 */
 export function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;

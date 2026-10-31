@@ -14,7 +14,7 @@
  */
 import type { Env } from '../lib/db';
 import { clearCookie, readSession } from '../lib/auth';
-import { json, externalHost, readParams } from '../lib/util';
+import { json, externalHost, externalProto, readParams } from '../lib/util';
 import { okData, reply, replyFail } from '../http/respond';
 import { handleCaptcha, handleLoginPost } from './auth';
 
@@ -201,7 +201,11 @@ export async function handleAdminApi(req: Request, env: Env, sub: string): Promi
     return reply(okData(await passageOptionRows(env)));
   }
   if (path === '/passages') {
-    if (method === 'GET') return reply(await listPassages(env, p, externalHost(req)));
+    if (method === 'GET') {
+      // 传对外 origin：反代场景下 Host 已是 Worker 域名，真实域名在 X-Forwarded-Host
+      const origin = `${externalProto(req)}://${externalHost(req)}`;
+      return reply(await listPassages(env, p, origin));
+    }
     if (method === 'POST') return reply(await savePassage(env, p, 0));
     if (method === 'DELETE') return reply(await removePassages(env, p));
     return notFound();
