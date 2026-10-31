@@ -93,15 +93,18 @@ export async function removeAdmins(
   return ok(`已删除 ${list.length} 条`);
 }
 
-/** 修改自己的资料 */
+/**
+ * 修改自己的资料。
+ *
+ * 只更新头像：手机 / 邮箱已从「个人资料」页移除，这里不再写这两列 ——
+ * 否则前端不传字段时会被写成空串，把「管理员」页里维护的联系方式清掉。
+ */
 export async function saveProfile(
   env: Env,
   p: Record<string, string>,
   currentUid: number
 ): Promise<ApiResult> {
   await repo.updateProfile(env.DB, currentUid, {
-    phone: p['phone'] ?? '',
-    email: p['email'] ?? '',
     head_img: p['head_img'] ?? '',
   });
   return ok('保存成功');

@@ -105,6 +105,7 @@ try {
 
   const me = await call('GET', '/me');
   check('/me 返回当前用户', me.json?.code === 1 && me.json?.data?.username === USER, me.json?.data?.username);
+  check('/me 带头像字段', typeof me.json?.data?.head_img === 'string');
 
   console.log('\n=== 只读接口 ===');
   const stats = await call('GET', '/stats');
@@ -344,8 +345,22 @@ try {
 
   const prof = await call('GET', '/profile');
   check('/profile 读取', prof.json?.code === 1 && prof.json?.data?.username === USER);
-  const profSave = await call('PUT', '/profile', { phone: '13800000000', email: 'a@b.co', head_img: '' });
+
+  // 资料页已移除手机/邮箱：保存时只改头像，请求里就算带了这两个字段也不能覆盖
+  sqlRun(`UPDATE admins SET phone='13800000000', email='a@b.co' WHERE username='${USER}';`);
+  const profSave = await call('PUT', '/profile', {
+    phone: '19999999999',
+    email: 'x@y.z',
+    head_img: '/upload/test.png',
+  });
   check('/profile 保存', profSave.json?.code === 1, profSave.json?.msg ?? '');
+  const profAfter = await call('GET', '/profile');
+  check(
+    '资料保存不动手机/邮箱',
+    profAfter.json?.data?.phone === '13800000000' && profAfter.json?.data?.email === 'a@b.co',
+    `${profAfter.json?.data?.phone} / ${profAfter.json?.data?.email}`
+  );
+  check('资料保存写入头像', profAfter.json?.data?.head_img === '/upload/test.png', profAfter.json?.data?.head_img ?? '');
   const weakPw = await call('PUT', '/profile/password', { password: '123', password_again: '123' });
   check('弱密码被拒', weakPw.json?.code === 0, weakPw.json?.msg ?? '');
 

@@ -177,11 +177,11 @@ export async function updateLoginTime(db: D1Database, id: number): Promise<void>
 export async function updateProfile(
   db: D1Database,
   id: number,
-  data: { phone: string; email: string; head_img: string }
+  data: { head_img: string }
 ): Promise<void> {
   await db
-    .prepare('UPDATE admins SET phone = ?, email = ?, head_img = ?, update_time = ? WHERE id = ?')
-    .bind(data.phone, data.email, data.head_img, now(), id)
+    .prepare('UPDATE admins SET head_img = ?, update_time = ? WHERE id = ?')
+    .bind(data.head_img, now(), id)
     .run();
 }
 

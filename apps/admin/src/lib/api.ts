@@ -99,6 +99,8 @@ export interface Me {
   id: number;
   username: string;
   role: number;
+  /** 头像地址（/upload/xxx）；空串表示没设置 */
+  head_img?: string;
 }
 
 export interface ChartData {

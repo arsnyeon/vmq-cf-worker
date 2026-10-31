@@ -126,7 +126,9 @@ export async function handleAdminApi(req: Request, env: Env, sub: string): Promi
   /* ============================ 会话 / 个人 ============================ */
 
   if (path === '/me') {
-    return reply(okData({ id: uid, username: session.u, role: 1 }));
+    // head_img 给侧边栏账号区显示头像用（没设置就是空串，前端回退到默认图标）
+    const me = await profileOf(env.DB, uid);
+    return reply(okData({ id: uid, username: session.u, role: 1, head_img: me?.head_img ?? '' }));
   }
   if (path === '/logout' && method === 'POST') return logoutJson();
 

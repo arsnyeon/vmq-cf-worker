@@ -133,7 +133,17 @@ function Shell({ me, children }: { me: Me; children: ReactNode }) {
                 )
               }
             >
-              <UserCog className="size-4" />
+              {/* 有头像就显示头像，没设置回退到图标；size-5 + 负边距是为了让
+                  图标/头像的视觉左边缘和上面 nav 项的 size-4 图标对齐 */}
+              {me.head_img ? (
+                <img
+                  src={me.head_img}
+                  alt=""
+                  className="-ml-0.5 size-5 shrink-0 rounded-full object-cover"
+                />
+              ) : (
+                <UserCog className="size-4" />
+              )}
               <span className="truncate">{me.username}</span>
             </NavLink>
             <ThemeToggle />
