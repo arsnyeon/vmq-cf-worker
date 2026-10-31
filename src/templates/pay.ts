@@ -91,7 +91,7 @@ export function renderPayPage(order: OrderRow, opt: PayPageOptions): string {
 <meta name="theme-color" content="#f5f7fb">
 <title>安全支付</title>
 <style>
-*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;min-width:320px;background:#f5f7fb;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}button,a{-webkit-tap-highlight-color:transparent}button{font:inherit}.page{width:100%;max-width:460px;margin:0 auto;padding:28px 18px calc(28px + env(safe-area-inset-bottom))}.brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:22px;font-size:16px;font-weight:650}.brand-mark{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#2563eb;color:#fff;font-size:15px}.brand img{height:30px;max-width:160px;object-fit:contain;object-position:left center}.card{padding:22px;background:#fff;border:1px solid #e8edf4;border-radius:20px;box-shadow:0 10px 35px rgba(30,64,175,.06);text-align:center}.meta{padding:0 2px 18px;border-bottom:1px solid #edf0f5;text-align:left}.order-id{margin:0;color:#64748b;font-size:12px;line-height:1.6;word-break:break-all}.order-id span{color:#334155;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.goods{margin:6px 0 0;color:#64748b;font-size:13px;line-height:1.6;word-break:break-all}.amount{margin:22px 0 18px;color:#2563eb;font-size:38px;font-weight:750;letter-spacing:-1px;line-height:1}.amount small{margin-left:5px;font-size:15px;letter-spacing:0}.qr-box{display:grid;place-items:center;width:244px;max-width:100%;min-height:244px;margin:0 auto;padding:11px;border:1px solid #e7ecf3;border-radius:16px;background:#fff}.qr-image{display:block;width:220px;height:220px;max-width:100%;object-fit:contain}.wallet{display:grid;gap:10px;max-width:100%;padding:30px 8px;color:#64748b;font-size:13px}.wallet strong{color:#172033;font-size:20px;word-break:break-all}.empty{margin:40px 12px;color:#94a3b8;font-size:14px}.notice{margin:18px 0 0;color:#dc2626;font-size:13px;line-height:1.7}.notice strong{font-weight:700}.countdown{margin:8px 0 0;color:#dc2626;font-size:13px;line-height:1.7}.countdown strong{font-variant-numeric:tabular-nums}.hint{margin:20px 0 0;color:#7b8798;font-size:14px;line-height:1.7}.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}.action{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 12px;border:0;border-radius:11px;text-decoration:none;font-size:13px;font-weight:650;cursor:pointer}.action:only-child{grid-column:1/-1}.action.primary{background:#2563eb;color:#fff}.action.secondary{background:#eef4ff;color:#2554c7}.action:active{transform:translateY(1px)}.action:focus-visible{outline:3px solid rgba(37,99,235,.25);outline-offset:2px}.status{display:none;margin:22px 0 0;padding:13px;border-radius:11px;background:#f0fdf4;color:#15803d;font-size:14px;font-weight:650}.status.expired{background:#fef2f2;color:#b91c1c}.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:5;max-width:calc(100% - 36px);padding:11px 17px;border-radius:10px;background:rgba(15,23,42,.92);color:#fff;font-size:13px;opacity:0;pointer-events:none;transform:translate(-50%,8px);transition:.18s}.toast.show{opacity:1;transform:translate(-50%,0)}@media(max-width:380px){.page{padding:18px 12px calc(20px + env(safe-area-inset-bottom))}.card{padding:18px 14px;border-radius:16px}.amount{font-size:34px}.qr-box{width:224px;min-height:224px}.qr-image{width:200px;height:200px}.actions{grid-template-columns:1fr}}@media(min-width:700px){.page{padding-top:42px}}
+*{box-sizing:border-box}html{-webkit-text-size-adjust:100%}body{margin:0;min-width:320px;background:#f5f7fb;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}button,a{-webkit-tap-highlight-color:transparent}button{font:inherit}.page{width:100%;max-width:460px;margin:0 auto;padding:28px 18px calc(28px + env(safe-area-inset-bottom))}.brand{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:22px;font-size:16px;font-weight:650}.brand-mark{display:grid;place-items:center;width:30px;height:30px;border-radius:9px;background:#2563eb;color:#fff;font-size:15px}.brand img{height:30px;max-width:160px;object-fit:contain;object-position:left center}.card{padding:22px;background:#fff;border:1px solid #e8edf4;border-radius:20px;box-shadow:0 10px 35px rgba(30,64,175,.06);text-align:center}.meta{padding:0 2px 18px;border-bottom:1px solid #edf0f5;text-align:left}.order-id{margin:0;color:#64748b;font-size:12px;line-height:1.6;word-break:break-all}.order-id span{color:#334155;font-family:ui-monospace,SFMono-Regular,Menlo,monospace}.goods{margin:6px 0 0;color:#64748b;font-size:13px;line-height:1.6;word-break:break-all}.amount{margin:22px 0 18px;color:#2563eb;font-size:38px;font-weight:750;letter-spacing:-1px;line-height:1}.amount small{margin-left:5px;font-size:15px;letter-spacing:0}.qr-box{display:grid;place-items:center;width:244px;max-width:100%;min-height:244px;margin:0 auto;padding:11px;border:1px solid #e7ecf3;border-radius:16px;background:#fff}.qr-image{display:block;width:220px;height:220px;max-width:100%;object-fit:contain}.wallet{display:grid;gap:10px;max-width:100%;padding:30px 8px;color:#64748b;font-size:13px}.wallet strong{color:#172033;font-size:20px;word-break:break-all}.empty{margin:40px 12px;color:#94a3b8;font-size:14px}.notice{margin:18px 0 0;color:#dc2626;font-size:13px;line-height:1.7}.notice strong{font-weight:700}.countdown{margin:12px 0 0;color:#b91c1c;font-size:14px;line-height:1.7}.countdown strong{font-size:23px;font-weight:750;font-variant-numeric:tabular-nums;letter-spacing:.5px}.countdown.warn{color:#b45309;font-weight:600}.countdown.warn strong{color:#d97706}.countdown.urgent strong{animation:cd-blink 1s steps(2,end) infinite}.countdown.gone{font-size:17px;font-weight:700;padding:10px 12px;border-radius:10px;background:#fef2f2}@keyframes cd-blink{50%{opacity:.35}}.hint{margin:20px 0 0;color:#7b8798;font-size:14px;line-height:1.7}.actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:18px}.action{display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 12px;border:0;border-radius:11px;text-decoration:none;font-size:13px;font-weight:650;cursor:pointer}.action:only-child{grid-column:1/-1}.action.primary{background:#2563eb;color:#fff}.action.secondary{background:#eef4ff;color:#2554c7}.action:active{transform:translateY(1px)}.action:focus-visible{outline:3px solid rgba(37,99,235,.25);outline-offset:2px}.status{display:none;margin:22px 0 0;padding:13px;border-radius:11px;background:#f0fdf4;color:#15803d;font-size:14px;font-weight:650}.status.expired{background:#fef2f2;color:#b91c1c}.toast{position:fixed;left:50%;bottom:calc(24px + env(safe-area-inset-bottom));z-index:5;max-width:calc(100% - 36px);padding:11px 17px;border-radius:10px;background:rgba(15,23,42,.92);color:#fff;font-size:13px;opacity:0;pointer-events:none;transform:translate(-50%,8px);transition:.18s}.toast.show{opacity:1;transform:translate(-50%,0)}@media(max-width:380px){.page{padding:18px 12px calc(20px + env(safe-area-inset-bottom))}.card{padding:18px 14px;border-radius:16px}.amount{font-size:34px}.qr-box{width:224px;min-height:224px}.qr-image{width:200px;height:200px}.actions{grid-template-columns:1fr}}@media(min-width:700px){.page{padding-top:42px}}
 </style>
 </head>
 <body>
@@ -129,6 +129,9 @@ export function renderPayPage(order: OrderRow, opt: PayPageOptions): string {
   var expired=false;
   var pending=false;
   var pollTimer=0;
+  var tickTimer=0;
+  var WARN_SECONDS=60;
+  var URGENT_SECONDS=10;
   var endAt=Date.now()+Math.max(0,expireAt-serverNow)*1000;
   var qrBox=document.getElementById('qr-box');
   var statusBox=document.getElementById('status');
@@ -165,39 +168,69 @@ export function renderPayPage(order: OrderRow, opt: PayPageOptions): string {
   }
 
   function showState(kind,text){
-    statusBox.textContent=text;
-    statusBox.className='status'+(kind==='expired'?' expired':'');
-    statusBox.style.display='block';
+    // text 为空表示不占用状态条（失效态由倒计时区块单独承载，避免两条重复提示）
+    if(text){
+      statusBox.textContent=text;
+      statusBox.className='status'+(kind==='expired'?' expired':'');
+      statusBox.style.display='block';
+    }
     var image=qrBox.querySelector('img');
     if(image){
       image.src=kind==='paid'?paidImage:expiredImage;
-      image.alt=text;
+      image.alt=text||'二维码已失效';
     }
     var actions=document.getElementById('payment-actions');
     if(actions)actions.style.display='none';
+    // 失效后还挂着「请付款 X 元」「请使用××扫一扫」会诱导用户去扫一张废码，一起收起来
+    if(kind==='expired'){
+      var amountNotice=document.getElementById('amount-notice');
+      if(amountNotice)amountNotice.style.display='none';
+      var payHint=document.getElementById('payment-hint');
+      if(payHint)payHint.style.display='none';
+    }
   }
 
   function showExpired(){
     if(expired)return;
     expired=true;
-    countdown.textContent='订单二维码已过期';
-    showState('expired','订单已过期，请重新发起支付');
+    clearInterval(tickTimer);
+    countdown.className='countdown gone';
+    countdown.textContent='二维码已失效，请重新下单';
+    showState('expired','');
   }
 
+  /**
+   * 每秒刷新剩余时间：
+   *   正常 → 「二维码有效时间 mm:ss」
+   *   最后 60 秒 → 橙色「即将失效，请尽快付款」
+   *   最后 10 秒 → 数字闪烁
+   * 归零直接走 showExpired()。
+   */
   function tick(){
-    if(done)return;
+    if(done||expired)return;
     var left=Math.max(0,Math.ceil((endAt-Date.now())/1000));
     if(left<=0){showExpired();return}
-    var minutes=Math.floor(left/60);
-    var seconds=left%60;
-    countdown.innerHTML='二维码有效时间 <strong>'+String(minutes).padStart(2,'0')+':'+String(seconds).padStart(2,'0')+'</strong>，失效勿付';
+    var mm=String(Math.floor(left/60)).padStart(2,'0');
+    var ss=String(left%60).padStart(2,'0');
+    if(left<=URGENT_SECONDS){
+      countdown.className='countdown urgent';
+      countdown.innerHTML='二维码即将失效 <strong>'+mm+':'+ss+'</strong>，请立即付款';
+    }else if(left<=WARN_SECONDS){
+      countdown.className='countdown warn';
+      countdown.innerHTML='二维码即将失效 <strong>'+mm+':'+ss+'</strong>，请尽快付款';
+    }else{
+      countdown.className='countdown';
+      countdown.innerHTML='二维码有效时间 <strong>'+mm+':'+ss+'</strong>，失效勿付';
+    }
   }
 
   function finishSuccess(url){
     if(done)return;
     done=true;
     clearTimeout(pollTimer);
+    clearInterval(tickTimer);
     showState('paid','支付成功，正在跳转…');
+    countdown.className='countdown';
     countdown.textContent='支付成功';
     setTimeout(function(){
       if(alipay){
@@ -269,6 +302,7 @@ export function renderPayPage(order: OrderRow, opt: PayPageOptions): string {
   });
 
   tick();
+  tickTimer=setInterval(tick,1000);
   if(${order.status === 3 ? 'true' : 'false'})showExpired();
   poll();
   if(notice)window.alert(notice);

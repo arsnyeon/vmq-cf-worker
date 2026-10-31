@@ -77,6 +77,17 @@ check('金额与二维码完整', desktop.includes('1.01') && desktop.includes('
 check('商户商品名已转义', desktop.includes('&lt;b&gt;测试商品&lt;/b&gt;') && !desktop.includes('<b>测试商品</b>'));
 check('支付状态串行轮询且失败重试', desktop.includes("expired?10000:1500") && desktop.includes("expired?5000:2000"));
 check('过期后降为低频探测', desktop.includes("schedulePoll(expired?10000:1500)"));
+// 倒计时：必须有定时器驱动（之前只渲染一次，页面上的时间是不动的）
+check('倒计时每秒刷新', desktop.includes('setInterval(tick,1000)') && desktop.includes('clearInterval(tickTimer)'));
+check(
+  '三档状态样式齐全（正常/临期/已失效）',
+  desktop.includes("countdown.className='countdown warn'") &&
+    desktop.includes("countdown.className='countdown urgent'") &&
+    desktop.includes("countdown.className='countdown gone'")
+);
+check('失效文案明确要求重新下单', desktop.includes('二维码已失效，请重新下单'));
+check('倒计时数字字号放大', /\.countdown strong\{[^}]*font-size:2[0-9]px/.test(desktop));
+check('失效后隐藏「请付款」与扫码提示', desktop.includes("amountNotice.style.display='none'") && desktop.includes("payHint.style.display='none'"));
 check('后台标签页暂停网络轮询', desktop.includes("if(document.hidden){schedulePoll(2000);return}"));
 check('支付成功保留支付宝关闭与签名回跳', desktop.includes("closeWebview") && desktop.includes("location.href=url"));
 
