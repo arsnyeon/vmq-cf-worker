@@ -1,7 +1,8 @@
 /**
  * 通道业务：列表、保存、启停、删除。
  */
-import { getConfig, type Env } from '../../lib/db';
+import { appSecret, getConfig, type Env } from '../../lib/db';
+import { hostOf } from '../../lib/util';
 import type { ApiResult } from '../../http/respond';
 import { fail, ok, table } from '../../http/respond';
 import { filterVal, idsOf, intVal, pageArgs } from '../../http/request';
@@ -10,7 +11,12 @@ import { PAY_TYPE_LABEL } from '../shared/labels';
 import * as repo from './passage.repository';
 import { toListRow } from './passage.presenter';
 
-export async function listPassages(env: Env, p: Record<string, string>): Promise<ApiResult> {
+export async function listPassages(
+  env: Env,
+  p: Record<string, string>,
+  /** 当前请求的对外 host；config.url 没配时用它兜底 */
+  reqHost = ''
+): Promise<ApiResult> {
   const { limit, offset } = pageArgs(p);
   const num = (k: 'type' | 'code' | 'status' | 'is_status'): number | undefined => {
     const v = filterVal(p, k);
@@ -32,18 +38,31 @@ export async function listPassages(env: Env, p: Record<string, string>): Promise
 
   // APP 扫码 / 手动配置：监控端绑定要用「域名/通讯密钥/通道id,支付类型」
   // 只有管理员能调这个接口，字符串给前端展示是预期行为（与旧后台一致）
-  const appBase = await appConfigBase(env);
+  const appBase = await appConfigBase(env, reqHost);
+  // 域名或密钥缺一个，整串就没意义（App 拿到也绑不上），给空串让前端显示「—」
   return table(
-    rows.map((r) => ({ ...toListRow(r), app_config: `${appBase}${r.id},${r.type}` })),
+    rows.map((r) => ({
+      ...toListRow(r),
+      app_config: appBase ? `${appBase}${r.id},${r.type}` : '',
+    })),
     count
   );
 }
 
-/** 「域名/通讯密钥/」；通讯密钥取值顺序与 appPush 验签一致 */
-async function appConfigBase(env: Env): Promise<string> {
-  const url = ((await getConfig(env, 'url')) || '').replace(/\/+$/, '');
-  const key = (await getConfig(env, 'app_key')) || (await getConfig(env, 'key')) || (await getConfig(env, 'epaykey_ali')) || '';
-  return url && key ? `${url}/${key}/` : '';
+/**
+ * 监控端扫码配置的前缀：「域名/密钥/」，后面接「通道id,支付类型」。
+ *
+ * 三条硬约束（错一条，App 就绑不上或者签不过）：
+ *   1. 域名**不带协议**：App 自己拼的是 http://host/appPush
+ *   2. 域名取 config.url 的 host；没配就用当前请求的 host 兜底
+ *   3. 密钥必须与 /appPush 验签用的是同一个（appSecret：app_key → key → epaykey_ali），
+ *      否则 App 拿扫到的值去签名，服务端验签必然失败
+ */
+async function appConfigBase(env: Env, fallbackHost = ''): Promise<string> {
+  const raw = (await getConfig(env, 'url')) || '';
+  const host = hostOf(raw) || hostOf(fallbackHost);
+  const key = await appSecret(env);
+  return host && key ? `${host}/${key}/` : '';
 }
 
 /** 新增（id=0）或修改 */

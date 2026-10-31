@@ -1,7 +1,7 @@
 /** 页面渲染的公共部分：占位符替换、时间格式化、配置读取 */
 
 import type { Env } from './db';
-import { externalHost, externalProto } from './util';
+import { externalHost, externalProto, hostOf } from './util';
 
 const SHANGHAI = 8 * 3600;
 
@@ -25,15 +25,7 @@ export function staticBase(cfg: Settings, env: Env): string {
  * 监控端扫码绑定的地址要靠它，配置里写的是域名时比 req 更准。
  */
 export function siteHost(cfg: Settings, req?: Request): string {
-  const configured = (cfg['url'] ?? '').trim();
-  if (configured) {
-    try {
-      return new URL(configured).host;
-    } catch {
-      /* 配置里可能不是完整 URL，退回 req */
-    }
-  }
-  return req ? new URL(req.url).host : '';
+  return hostOf(cfg['url'] ?? '') || (req ? externalHost(req) : '');
 }
 
 /** 时间戳 → 'Y-m-d H:i:s'（东八区） */

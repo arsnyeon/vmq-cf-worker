@@ -22,7 +22,8 @@
     "db:remote": "wrangler d1 execute vmq --remote -c \"$(node scripts/cfg.mjs)\" --file=./schema.sql",
     "db:seed:local": "wrangler d1 execute vmq --local -c \"$(node scripts/cfg.mjs)\" --file=./seed.sql",
     "db:seed:remote": "wrangler d1 execute vmq --remote -c \"$(node scripts/cfg.mjs)\" --file=./seed.sql",
-    "test": "pnpm typecheck && pnpm test:web && pnpm test:pay && pnpm test:qr && pnpm test:md5 && pnpm test:notify && pnpm test:forwarded && pnpm test:params && pnpm test:alias && pnpm test:http",
+    "test:siteurl": "node --experimental-strip-types --import ./test/ts-import-hook.mjs test/siteurl.check.mjs",
+    "test": "pnpm typecheck && pnpm test:web && pnpm test:pay && pnpm test:qr && pnpm test:md5 && pnpm test:notify && pnpm test:forwarded && pnpm test:params && pnpm test:alias && pnpm test:siteurl && pnpm test:http",
     "test:pay": "node --experimental-strip-types test/pay.check.mjs",
     "test:qr": "node --experimental-strip-types test/qr.decode.mjs && node --experimental-strip-types test/qr.check.mjs",
     "admin": "node scripts/reset-admin.mjs",
@@ -35,7 +36,7 @@
     "web:build": "pnpm --filter @vmq/web build",
     "dev:all": "pnpm admin:build && pnpm web:build && pnpm dev",
     "test:http": "node test/smoke.http.mjs",
-    "verify": "pnpm typecheck && pnpm test:web && pnpm test:pay && pnpm test:qr && pnpm test:md5 && pnpm test:notify && pnpm test:forwarded && pnpm test:params && pnpm test:alias && pnpm test:http && pnpm test:admin"
+    "verify": "pnpm typecheck && pnpm test:web && pnpm test:pay && pnpm test:qr && pnpm test:md5 && pnpm test:notify && pnpm test:forwarded && pnpm test:params && pnpm test:alias && pnpm test:siteurl && pnpm test:http && pnpm test:admin"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20260914.1",

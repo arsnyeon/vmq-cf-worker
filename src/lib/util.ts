@@ -110,6 +110,26 @@ export function publicUrl(req: Request, path: string): string {
   return `${externalProto(req)}://${externalHost(req)}${p}`;
 }
 
+/**
+ * 取「纯域名」（不带协议、不带端口以外的路径）：
+ *   'https://pay.example.com/'  → 'pay.example.com'
+ *   'pay.example.com/sub'       → 'pay.example.com'
+ *   ''                          → ''
+ *
+ * 后台「站点地址」是手填的，写成不带协议、带尾斜杠、甚至带子路径都有可能，
+ * 而监控端 App 要的就是一个能拼 `http://host/appPush` 的裸 host，这里统一兜住。
+ */
+export function hostOf(v: string): string {
+  const s = v.trim();
+  if (!s) return '';
+  try {
+    return new URL(/^https?:\/\//i.test(s) ? s : `https://${s}`).host;
+  } catch {
+    // 不是合法 URL（比如含空格），退化成去掉首尾斜杠原样返回，总比报错好
+    return s.replace(/^\/+|\/+$/g, '');
+  }
+}
+
 /** 定长比较，避免签名比较的时序差异 */
 export function safeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;

@@ -40,7 +40,6 @@ interface PassageRow {
   succcount: number;
   succprice: string;
   create_time: string;
-  ck_time: string;
   run_time: string;
   app_config: string;
 }
@@ -301,7 +300,7 @@ export function PassagesPage() {
       </Toolbar>
 
       <Panel>
-        <Table className="min-w-[1980px]">
+        <Table className="min-w-[1860px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">
@@ -324,7 +323,6 @@ export function PassagesPage() {
               <TableHead className="w-20">在线状态</TableHead>
               <TableHead className="w-20">状态</TableHead>
               <TableHead className="w-36">添加时间</TableHead>
-              <TableHead className="w-36">CK更新时间</TableHead>
               <TableHead className="w-36">监控运行时间</TableHead>
               <TableHead className="w-24">APP扫码配置</TableHead>
               <TableHead className="w-40">APP手动配置</TableHead>
@@ -334,11 +332,11 @@ export function PassagesPage() {
           </TableHeader>
           <TableBody>
             {query.isLoading ? (
-              <EmptyRow colSpan={19} text="加载中…" />
+              <EmptyRow colSpan={18} text="加载中…" />
             ) : query.error ? (
-              <EmptyRow colSpan={19} text={`加载失败：${String(query.error)}`} />
+              <EmptyRow colSpan={18} text={`加载失败：${String(query.error)}`} />
             ) : rows.length === 0 ? (
-              <EmptyRow colSpan={19} text="还没有通道，点「新增通道」" />
+              <EmptyRow colSpan={18} text="还没有通道，点「新增通道」" />
             ) : (
               rows.map((r) => (
                 <TableRow key={r.id} className="group">
@@ -393,9 +391,6 @@ export function PassagesPage() {
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                     {r.create_time || '—'}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                    {r.ck_time || '—'}
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                     {r.run_time || '—'}

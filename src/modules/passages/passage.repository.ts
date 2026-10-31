@@ -27,7 +27,7 @@ const TEXT_FIELDS = new Set<string>(['zf_pid', 'ewm', 'remarks']);
 
 const LIST_COLUMNS =
   'id, type, code, zf_pid, ewm_type, ewm, balance, succcount, succprice, is_status, status, '
-  + 'money_change, pay_qf, create_time, ck_time, run_time, remarks';
+  + 'money_change, pay_qf, create_time, run_time, remarks';
 
 export interface PassageListFilter {
   type?: number;

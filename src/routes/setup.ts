@@ -14,7 +14,7 @@
 import type { Env } from '../lib/db';
 import { setAdminAliasCache } from '../lib/db';
 import { hashPassword } from '../lib/auth';
-import { html, randHex, text } from '../lib/util';
+import { externalHost, externalProto, html, randHex, text } from '../lib/util';
 
 const esc = (s: string): string =>
   s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -186,6 +186,10 @@ export async function handleSetup(req: Request, env: Env): Promise<Response> {
     ['admin_secret', adminSecret],
     ['cron_key', cronKey],
     ['title', sitename],
+    // 站点地址：监控端扫码配置要用域名，装的时候就把当前访问域名写进去，
+    // 省得用户还要去「系统配置」手填一遍。
+    // 用对外域名（认 X-Forwarded-Host），反代场景下不会把 Worker 自己的域名写进去。
+    ['url', `${externalProto(req)}://${externalHost(req)}`],
   ];
 
   try {

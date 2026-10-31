@@ -252,7 +252,29 @@ try {
     check('按状态+支付模式筛选', flt2.json?.code === 0, `count=${flt2.json?.count}`);
     const flt3 = await call('GET', '/passages?page=1&limit=50&start=2099-01-01&end=2099-12-31');
     check('按时间范围筛选（未来=0 条）', flt3.json?.code === 0 && flt3.json?.count === 0, `count=${flt3.json?.count}`);
-    check('行带 APP 配置', typeof pr.app_config === 'string', pr.app_config ? '已生成' : '空（未配密钥）');
+    // APP 扫码配置必须是「域名/通讯密钥/通道id,支付类型」：
+    // 域名不带协议、密钥必须与 /appPush 验签同源，否则监控端 App 绑上了也签不过。
+    const cfgUrl = (
+      execFileSync('sqlite3', [DB, "SELECT v FROM config WHERE k='url'"], { encoding: 'utf8' }).trim() ||
+      BASE
+    );
+    // 取值顺序必须和 appSecret() 一致：app_key → key → epaykey_ali
+    const cfgKey = execFileSync(
+      'sqlite3',
+      [
+        DB,
+        "SELECT v FROM config WHERE k IN ('app_key','key','epaykey_ali') AND v<>'' " +
+          "ORDER BY CASE k WHEN 'app_key' THEN 0 WHEN 'key' THEN 1 ELSE 2 END LIMIT 1",
+      ],
+      { encoding: 'utf8' }
+    ).trim();
+    const wantHost = cfgUrl.replace(/^https?:\/\//, '').replace(/\/.*$/, '');
+    const wantCfg = cfgKey ? `${wantHost}/${cfgKey}/${pr.id},${pr.old_type}` : '';
+    check(
+      'APP 扫码配置格式（域名/密钥/通道id,支付类型）',
+      pr.app_config === wantCfg,
+      `${pr.app_config} （期望 ${wantCfg || '空'}）`
+    );
 
     // 列表筛选（对齐旧后台搜索行的字段）
 

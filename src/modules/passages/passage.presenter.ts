@@ -10,7 +10,7 @@ import type { PassageListRow } from './passage.repository';
 
 export function toListRow(r: PassageListRow): Record<string, unknown> {
   return {
-    ...withTimes(r, ['create_time', 'ck_time', 'run_time']),
+    ...withTimes(r, ['create_time', 'run_time']),
     old_type: r.type,
     old_code: r.code,
     type: PAY_TYPE_LABEL[Number(r.type)] ?? String(r.type),

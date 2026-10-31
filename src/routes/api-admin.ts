@@ -14,7 +14,7 @@
  */
 import type { Env } from '../lib/db';
 import { clearCookie, readSession } from '../lib/auth';
-import { json, readParams } from '../lib/util';
+import { json, externalHost, readParams } from '../lib/util';
 import { okData, reply, replyFail } from '../http/respond';
 import { handleCaptcha, handleLoginPost } from './auth';
 
@@ -201,7 +201,7 @@ export async function handleAdminApi(req: Request, env: Env, sub: string): Promi
     return reply(okData(await passageOptionRows(env)));
   }
   if (path === '/passages') {
-    if (method === 'GET') return reply(await listPassages(env, p));
+    if (method === 'GET') return reply(await listPassages(env, p, externalHost(req)));
     if (method === 'POST') return reply(await savePassage(env, p, 0));
     if (method === 'DELETE') return reply(await removePassages(env, p));
     return notFound();

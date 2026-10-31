@@ -13,7 +13,7 @@ import { readdirSync, readFileSync, statSync, existsSync } from 'node:fs';
 import { join, extname } from 'node:path';
 
 const EXT = new Set(['.ts', '.mjs', '.js', '.json', '.jsonc', '.md', '.sql', '.html', '.example']);
-const SKIP_DIR = new Set(['node_modules', '.wrangler', '.git', 'public', 'dist']);
+const SKIP_DIR = new Set(['node_modules', '.wrangler', '.git', 'public', 'dist', '.data']);
 const SKIP_FILE = new Set([
   'wrangler.local.jsonc',
   'seed.local.sql',
