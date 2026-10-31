@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { api, ApiError, type Me } from '@/lib/api';
 import { Brand } from '@/components/brand';
 
@@ -30,7 +30,8 @@ export function LoginPage({ onLogin }: { onLogin: (me: Me) => void }) {
     } catch (err) {
       setError(err instanceof ApiError ? err.message : '登录失败，请重试');
       setCaptcha('');
-      // 刷新验证码图片（如果后台开了验证码）
+      // 失败后换一张图（验证码是无状态签名 cookie，旧码到期前仍有效，
+      // 这里换图只是给用户一张更清晰的，不是让它失效）
       setCaptchaKey((k) => k + 1);
     } finally {
       setBusy(false);
@@ -40,12 +41,9 @@ export function LoginPage({ onLogin }: { onLogin: (me: Me) => void }) {
   return (
     <div className="flex min-h-screen items-center justify-center px-4">
       <Card className="w-full max-w-sm">
-        <CardHeader>
-          <div className="mb-2">
-            <Brand markClassName="size-7" />
-          </div>
-          <CardTitle>登录</CardTitle>
-          <CardDescription>使用管理员账号登录</CardDescription>
+        {/* 只有 LOGO + 「管理后台」，居中；标题/副标题的「登录」文案已去掉 */}
+        <CardHeader className="items-center">
+          <Brand markClassName="size-7" />
         </CardHeader>
         <CardContent>
           <form onSubmit={submit} className="space-y-4">
@@ -76,7 +74,6 @@ export function LoginPage({ onLogin }: { onLogin: (me: Me) => void }) {
                   id="captcha"
                   value={captcha}
                   onChange={(e) => setCaptcha(e.target.value)}
-                  placeholder="未开启可留空"
                 />
                 <img
                   key={captchaKey}
