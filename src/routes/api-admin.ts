@@ -171,7 +171,7 @@ export async function handleAdminApi(req: Request, env: Env, sub: string): Promi
         monitorOnline: online,
         staticAssets: STATIC_ASSETS_LABEL,
         uploadLimit: `${MAX_UPLOAD_LABEL} · ${UPLOAD_MIME_LABEL}`,
-        notifyJudge: notifyJudgeLabel(cfg['notify_success_body'] ?? 'success'),
+        notifyJudge: notifyJudgeLabel(cfg['notify_success_body'] ?? '@json:code=1'),
         notifyRetry: '8 次 · 跨度约 20 小时',
         quota: '以 Cloudflare 控制台为准',
       })

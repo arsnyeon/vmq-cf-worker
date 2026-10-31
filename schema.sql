@@ -145,7 +145,7 @@ INSERT OR IGNORE INTO config (k, v) VALUES
   ('description', ''),
   ('footer', ''),
   ('url', ''),
-  ('notify_success_body', 'success'),
+  ('notify_success_body', '@json:code=1'),  -- 回调成功判定：默认按 JSON 的 code=1（商户返回 {"code":1}）
   ('require_online', '1'),
   ('replay_window_seconds', '300'),
   ('admin_captcha', '1'),

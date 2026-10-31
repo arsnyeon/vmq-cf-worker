@@ -134,10 +134,10 @@ pnpm run deploy
 2. **系统配置 → 站点信息** → 站点地址、站点名称等（站点地址在 `/setup` 时已自动写成当前域名，可改）
 3. **系统配置 → 密钥管理** → 通讯密钥就在这里；商户下单签名和监控端签名共用同一把
 
-> 回调成功判定（`notify_success_body`，默认 `success`）暂时没有后台入口，需要改库：
+> 回调成功判定（`notify_success_body`，默认 `@json:code=1`）暂时没有后台入口，需要改库：
 >
 > ```bash
-> npx wrangler d1 execute vmq --remote --command "UPDATE config SET v='@json:code=1' WHERE k='notify_success_body'"
+> npx wrangler d1 execute vmq --remote --command "UPDATE config SET v='success' WHERE k='notify_success_body'"
 > ```
 >
 > 三种取值见下面「异步回调」一节。
@@ -197,9 +197,9 @@ money, really_money, name, sitename, sign, sign_type=MD5
 
 | 取值              | 判定                             |
 | ----------------- | -------------------------------- |
-| `success`（默认） | 响应体去空白后等于 success       |
+| `success`         | 响应体去空白后等于 success       |
 | `@any2xx`         | 只看 HTTP 状态码 2xx             |
-| `@json:code=1`    | 响应体是 JSON 且 `code` 字段为 1 |
+| `@json:code=1`（默认） | 响应体是 JSON 且 `code` 字段为 1 |
 
 失败会按 30s → 2m → 10m → 1h → 6h 退避重试，最多 8 次。
 

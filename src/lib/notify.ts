@@ -108,7 +108,7 @@ export async function deliverTask(env: Env, taskId: number): Promise<boolean> {
     }>();
   if (!task || task.done === 1) return true;
 
-  const expect = await getConfig(env, 'notify_success_body', 'success');
+  const expect = await getConfig(env, 'notify_success_body', '@json:code=1');
   const url = task.url.includes('?') ? `${task.url}&${task.payload}` : `${task.url}?${task.payload}`;
 
   let ok = false;
