@@ -30,7 +30,7 @@
  *
  * 配置：读 .cdn.local.json（已在 .gitignore 中，模板见 .cdn.example.json）。
  */
-import { existsSync, readFileSync, mkdirSync } from 'node:fs';
+import { existsSync, readFileSync, mkdirSync, readdirSync, statSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
@@ -68,6 +68,18 @@ const VERIFY = !args.includes('--no-verify');
 function die(msg) {
   console.error(`\n✗ ${msg}\n`);
   process.exit(1);
+}
+
+/** 递归列出目录下所有文件，返回相对该目录的 posix 路径 */
+function walk(dir, prefix = '') {
+  const out = [];
+  for (const name of readdirSync(dir)) {
+    const full = join(dir, name);
+    const rel = prefix ? `${prefix}/${name}` : name;
+    if (statSync(full).isDirectory()) out.push(...walk(full, rel));
+    else out.push(rel);
+  }
+  return out;
 }
 
 function loadConfig() {
@@ -150,28 +162,36 @@ function uploadDir(prefix, target, dir) {
 }
 
 /**
- * 上传后校验：把构建产物 HTML 里引用到的资源改写成 CDN 地址，逐个 HEAD。
+ * 上传后校验：把本地这些目录里的每个文件都按 CDN 地址 HEAD 一遍。
  *
- * 这一步专门用来抓「传了但漏了某类文件」——比如 CSS 传了、JS 没传，
- * 页面上看不出异常，但打开后台就是白屏。HEAD 一遍直接暴露。
+ * 为什么按「本地文件清单」而不是「HTML 里引用的资源」：
+ * 后台是懒加载的，17 个 chunk 根本不出现在 HTML 里，只在 bundle 内部
+ * 用拼接函数按需加载。只校验 HTML 的话，这些 chunk 一个都覆盖不到，
+ * 校验会假通过——而那正是最容易出问题的地方（主 bundle 上去了、
+ * chunk 漏了，页面能开但一点就白屏）。
+ *
+ * 用本地清单还有个好处：它天然等于「本次应该传上去的全集」，
+ * 少一个就说明传漏了。
  */
 async function verify(cfg) {
   const targets = [];
-  const re = /(?:src|href)="(\/(?:console|site|static)\/[^"]*)"/g;
 
-  for (const html of ['public/console/index.html', 'public/site/index.html']) {
-    const p = join(ROOT, html);
-    if (!existsSync(p)) continue;
-    const text = readFileSync(p, 'utf8');
-    for (const m of text.matchAll(re)) targets.push(m[1]);
+  for (const dir of DIRS) {
+    const base = join(ROOT, 'public', dir);
+    if (!existsSync(base)) continue;
+    for (const rel of walk(base)) {
+      const name = rel.split('/').pop() ?? '';
+      // 与上传时的排除规则保持一致：这些本来就不该在 CDN 上
+      if (name.endsWith('.html') || name === '.DS_Store') continue;
+      targets.push(`${cfg.cdnBase}/${dir}/${rel}`);
+    }
   }
 
   const uniq = [...new Set(targets)];
   if (!uniq.length) return { checked: 0, failed: [] };
 
   const failed = [];
-  for (const path of uniq) {
-    const url = `${cfg.cdnBase}${path}`;
+  for (const url of uniq) {
     let ok = false;
     for (let attempt = 0; attempt < 2 && !ok; attempt++) {
       if (attempt) await new Promise((r) => setTimeout(r, 800));
