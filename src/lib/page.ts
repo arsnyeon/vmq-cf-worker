@@ -43,6 +43,24 @@ export function rewriteAssetUrls(html: string, base: string): string {
 }
 
 /**
+ * 注入静态资源基址的**运行时全局变量**，供 bundle 内的动态 import 使用。
+ *
+ * 为什么需要：懒加载 chunk 的 URL 是 Vite 在打包时用 `renderBuiltUrl` 生成的
+ * 运行时代码，形如
+ *     window.__VMQ_ASSET_BASE__ + "/console/assets/page-shell-xxx.js"
+ * HTML 里的 <script src> 可以由 rewriteAssetUrls 改写，但这段代码在 bundle 内部，
+ * 服务端改不到，只能在这里给全局变量赋值。
+ *
+ * 必须插在 <head> 开头：入口是 <script type="module">（defer 执行），
+ * 而普通内联 <script> 同步执行，所以一定会先跑，避免出现 undefined。
+ */
+export function injectAssetBase(html: string, base: string): string {
+  const value = JSON.stringify(base.replace(/\/+$/, '')).replace(/</g, '\\u003c');
+  const tag = `<script>window.__VMQ_ASSET_BASE__=${value};</script>`;
+  return html.replace(/<head[^>]*>/i, (m) => `${m}${tag}`);
+}
+
+/**
  * 站点 host（不带协议）：配置了 site.url 就用它，否则取当前请求的 host。
  * 监控端扫码绑定的地址要靠它，配置里写的是域名时比 req 更准。
  */

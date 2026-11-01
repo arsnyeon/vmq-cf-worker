@@ -1,7 +1,7 @@
 /** 站点前台页面（首页 / 文档 / 示例 / 查单）以及二维码、上传资源输出 */
 
 import type { Env } from '../lib/db';
-import { loadSettings, rewriteAssetUrls, siteVars, staticBase } from '../lib/page';
+import { injectAssetBase, loadSettings, rewriteAssetUrls, siteVars, staticBase } from '../lib/page';
 import { createDemoOrder } from '../lib/order';
 import { qrPng } from '../lib/qr';
 import { clientIp, html, publicUrl, text } from '../lib/util';
@@ -90,7 +90,8 @@ export async function handleSitePage(req: Request, env: Env, path: string): Prom
 
   const settings = await loadSettings(env);
   const vars = siteVars(settings);
-  const out = rewriteAssetUrls(injectPage(await shell.text(), vars, page.title), staticBase(settings, env));
+  const base = staticBase(settings, env);
+  const out = rewriteAssetUrls(injectAssetBase(injectPage(await shell.text(), vars, page.title), base), base);
   return new Response(out, {
     headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
   });

@@ -9,19 +9,21 @@ import { handleSetup } from './routes/setup';
 import { handleQrCode, handleSitePage, handleUploadGet, isSitePage } from './routes/site';
 import { handleSubmit } from './routes/submit';
 import { json, readParams } from './lib/util';
-import { loadSettings, rewriteAssetUrls, staticBase } from './lib/page';
+import { injectAssetBase, loadSettings, rewriteAssetUrls, staticBase } from './lib/page';
 
 /**
  * 返回后台 SPA 的外壳。
  *
  * 外壳是 assets 里的 /console/index.html，但只在后台入口路径下给出；
  * 不缓存（每次部署 hash 都会变，缓存住旧壳会白屏）。
- * 配了「静态资源地址」时，把 /console/ 的 JS/CSS/favicon 一并重写到 CDN。
+ * 配了「静态资源地址」时，把 /console/ 的 JS/CSS/favicon 重写到 CDN，
+ * 并把基址注入全局变量，供 bundle 内的懒加载 chunk 拼接 URL。
  */
 async function serveSpa(env: Env, url: URL): Promise<Response> {
   const shell = await env.ASSETS.fetch(new URL('/console/index.html', url));
   const settings = await loadSettings(env);
-  const out = rewriteAssetUrls(await shell.text(), staticBase(settings, env));
+  const base = staticBase(settings, env);
+  const out = rewriteAssetUrls(injectAssetBase(await shell.text(), base), base);
   return new Response(out, {
     status: shell.status,
     headers: { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' },
