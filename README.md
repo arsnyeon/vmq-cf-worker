@@ -61,7 +61,7 @@
 - [pnpm](https://pnpm.io/installation) 9+（`corepack enable` 即可；仓库已用 `packageManager` 锁定版本）
 - [Cloudflare 账号](https://dash.cloudflare.com/sign-up)（免费即可）
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-update/)：`npm i -g wrangler`
-- 一个监控端 App（见「监控端」一节）
+- 监控端 App：**推荐 [V免签配套监控安卓端](https://github.com/im-webb/vmq-monitor-android)** —— Kotlin 原生实现，监听通知栏到账通知后上报到本服务端，扫码复用同一套配置；`minSdk 24`（Android 7.0+）
 
 ```bash
 wrangler login
@@ -168,7 +168,7 @@ pnpm run deploy
 
 ### 8. 绑定监控端
 
-用监控端 App 扫描后台「通道管理」列表里的「APP扫码配置」二维码，或在 App 里按同样格式手动填写：
+用 [V免签配套监控安卓端](https://github.com/im-webb/vmq-monitor-android) 扫描后台「通道管理」列表里的「APP扫码配置」二维码，或在 App 里按同样格式手动填写：
 
 ```
 https://your-domain.com/通讯密钥/通道id,支付类型      例：https://pay.example.com/3f9a…/8,1
