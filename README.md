@@ -10,6 +10,9 @@
                         按金额匹配订单 → 标记已支付 → 回调你的商户系统 → 发货
 ```
 
+> 用 AI 助手代为安装、配置或维护：直接看 [AI Agent 指南](#ai-agent-指南)，里面有可整段复制的提示语。
+> 提交与安全约束在 [AGENTS.md](./AGENTS.md)。
+
 ## 和 V免签、易支付的关系
 
 这个项目**不是「V免签 + 易支付」两套东西拼在一起**，而是「**V免签 的一个 TypeScript / Workers 重写**」。它天生同时具备两个身份：
@@ -152,6 +155,184 @@ https://your-domain.com/通讯密钥/通道id,支付类型      例：https://pa
 ```
 
 域名取「系统配置 → 站点信息」的站点地址，没配则用你访问后台时所用的域名。
+
+## AI Agent 指南
+
+给 AI 助手（Claude Code、Codex、Cursor、Qoder、Copilot 等）用的操作说明：**怎么装、怎么用、怎么维护**。
+安全与提交的硬约束在 [AGENTS.md](./AGENTS.md)，动手前先读那一份；本节只讲"怎么做"。
+
+> 下文 `<地址>`、`<别名>`、`<database-id>` 均为占位符。真实域名、D1 ID、密钥、收款码**只能**写进
+> `wrangler.local.jsonc` 等已忽略文件，绝不进入任何会被提交的内容。
+
+### 三条硬性约束
+
+1. **先读 [AGENTS.md](./AGENTS.md)** —— 它列了绝对不能提交的清单（真实域名、Account ID、密钥、收款码）。
+2. **改完必须过门禁** —— 提交前 `pnpm check:leak:worktree`，推送前 `pnpm check:leak`。
+3. **破坏性操作先问** —— `DROP` / `DELETE` / `wrangler d1 delete` / 改 schema / 重置管理员，一律先确认再动。
+
+### 命令速查
+
+| 目的 | 命令 | 作用范围 |
+| --- | --- | --- |
+| 装依赖 | `pnpm install` | 本地 |
+| 新建 D1 库 | `pnpm db:create` | 远程 |
+| 建表 / 补表结构 | `pnpm db:remote` | 远程，只跑 `IF NOT EXISTS`，不删数据 |
+| 构建 + 部署 | `pnpm run deploy` | 远程 Worker |
+| 本地起服务 | `pnpm dev` | 本地 |
+| 初始化本地库 | `pnpm db:local` | 本地 |
+| 全量自检 | `pnpm verify` | 需先 `pnpm db:local`，且 `pnpm dev` 在跑 |
+| 泄露门禁 | `pnpm check:leak` | 工作区 + 全部 Git 历史 |
+| 重置管理员 | `node scripts/reset-admin.mjs` | **只改本地**，会同时打印远程命令 |
+| 同步 CDN（可选） | `pnpm cdn:sync` | 远程 OSS |
+| 查远程库 | `pnpm exec wrangler d1 execute vmq --remote -c "$(node scripts/cfg.mjs)" --command "..."` | 远程 |
+
+> 必须写 `pnpm run deploy`。`pnpm deploy` 是 pnpm 自身的命令，会报 `ERR_PNPM_NOTHING_TO_DEPLOY`。
+
+**多环境容易踩的坑**：所有带 `-c "$(node scripts/cfg.mjs)"` 的命令都认 `WRANGLER_CONFIG`。
+目录里存在多份 `wrangler.local.*.jsonc` 时，先确认当前用的是哪一份——它们可能绑的是不同的 D1，
+选错会报 `7404` / `10181`（database not found），因为 wrangler 认的是当前登录的账号。
+
+```bash
+node scripts/cfg.mjs                             # 看当前解析到哪个配置文件
+WRANGLER_CONFIG=wrangler.local.other.jsonc ...   # 临时切换到另一份
+```
+
+### 场景一：全新安装
+
+复制下面整段给 Agent：
+
+```text
+请在本仓库完成一次全新安装。每步都要验证，任一步失败就停下报告现象，不要跳过、不要靠猜修复。
+
+前置检查（任一项不满足就先告诉我，不要自动安装全局工具）：
+- node -v            → 需 >= 22.15
+- pnpm -v            → 需 >= 9（没有就让我自己执行 corepack enable）
+- wrangler --version → 可用
+- wrangler whoami    → 已登录
+
+步骤：
+1. pnpm install
+2. pnpm db:create
+   → 记下输出里的 database_id
+3. cp wrangler.example.jsonc wrangler.local.jsonc
+   → 把文件里的 <your-database-id> 换成上一步的 id
+   → 改完确认 git status 里看不到这个文件（它已 gitignore）
+4. pnpm db:remote
+5. pnpm run deploy
+   → 记下部署后的地址
+6. 提醒我自己去打开 <地址>/setup 完成初始化；管理员账号密码由我填写，你不要代填
+
+验收标准：
+- 第 4 步后执行
+  pnpm exec wrangler d1 execute vmq --remote -c "$(node scripts/cfg.mjs)" --command "SELECT name FROM sqlite_master WHERE type='table'"
+  结果里必须有 passages / orders / admins
+- 第 5 步后执行 curl -s -o /dev/null -w '%{http_code}' <地址>/api/health → 必须是 200
+
+禁止：
+- 不要执行 wrangler d1 delete、DROP、DELETE FROM
+- 不要把真实域名 / database_id / 密钥写进任何会被提交的文件、注释或提交说明
+```
+
+### 场景二：配置到能收一笔测试款
+
+```text
+帮我把站点配到「能收一笔测试款」的状态，每步验证后再进下一步，遇到阻塞停下报告。
+
+前置：我已经在 /setup 完成初始化，能登录后台。
+
+1. 通道管理 → 新增通道
+   支付模式 = 微信（wxpay）、通道模式 = 无金额收款码、支付用户ID 留空
+   收款码 = 我口述给你的内容（你不要把它写进任何文件）
+   保存后告诉我通道 id
+2. 用测试参数下一单：商户号 1001、金额 0.12，确认接口返回 pay_url
+3. curl -I <pay_url>，确认 200 且 content-type 是 text/html
+4. 打开 pay_url，确认页面显示金额 0.12 和收款二维码
+
+验收：后台「订单管理」能看到这笔订单、状态「待支付」；概览页「累计订单」比之前多 1。
+
+注意：不要替我改订单状态、不要点「标记已支付」，测试款到账后由我自己处理。
+```
+
+### 场景三：对接商户系统
+
+```text
+帮我把本项目的易支付接口接到我的站点（我的语言：<你的语言>）。
+
+1. 读 README「接口 → 创建订单」一节，列出必填参数和签名规则
+2. 用 pid=1001、key=test-only-key 生成一个签名示例，把 MD5 的拼接顺序完整写出来
+3. 给我一段最小可运行的下单代码，域名用 example.com、密钥用 test-only-key
+4. 说明：异步回调怎么验签、失败会重试几次、什么条件算「已到账」
+
+约束：示例里只用假值，不要用我的真实域名和密钥。
+```
+
+### 场景四：例行体检（只读）
+
+```text
+帮我做一次只读体检，不要修改任何数据。输出每行「项目：结论」，异常项前面加 [异常]。
+
+1. curl -s -o /dev/null -w '%{http_code}' <地址>/api/health → 期望 200
+2. 后台概览：报告监控端状态（在线 / 异常 / 离线）和心跳年龄
+3. 订单管理：统计最近 24 小时「回调失败」的订单数量，列出订单号
+4. 订单管理：统计最近 24 小时已支付订单的笔数和金额，与概览页对比是否一致
+5. 通道管理：报告是否存在「有订单但收款笔数/金额全为 0」的通道
+6. 若配了外部 CDN：pnpm cdn:dry，报告三个目录待上传对象数
+
+不要导出全表，不要输出订单号以外的用户信息。
+```
+
+### 场景五：升级到最新版
+
+```text
+帮我把仓库升级到最新版并重新部署，前提是不能破坏线上数据。
+
+1. git status → 有未提交改动就停下问我，不要 stash、不要 reset
+2. git pull --ff-only
+3. pnpm install
+4. 对比 schema.sql：有没有新增表 / 列 / 索引，先告诉我影响再继续
+5. pnpm db:remote      （只跑 CREATE ... IF NOT EXISTS，不会删数据）
+6. pnpm run deploy
+7. 部署完跑一次「例行体检」
+
+如果 pull 出现冲突或分支分叉，停下报告，不要 rebase、不要强推。
+```
+
+### 场景六：重置管理员密码
+
+```text
+帮我重置后台管理员密码。先问我重置的是本地还是线上，不要自己假设。
+
+本地：
+  node scripts/reset-admin.mjs
+  → 它会打印新口令，以及一条现成的远程 wrangler 命令
+
+线上：
+  1. 本地先跑 node scripts/reset-admin.mjs <账号> <新密码>，拿到它打印的哈希
+  2. 执行它给出的那条 wrangler 命令；如果配了多环境，末尾补 -c "$(node scripts/cfg.mjs)"
+  3. 用新密码登录验证，旧密码应当失效
+
+注意：该脚本本身只改本地库，线上必须用上面第 2 步的命令。
+如果是「彻底重装」（删 Worker 和 D1 再来一次），不要自行决定删除顺序，按 docs/reset-and-redeploy.md 走。
+```
+
+### 日常维护清单（人或 Agent 都能照做）
+
+| 频率 | 检查项 | 怎么做 |
+| --- | --- | --- |
+| 每天 | 服务可达 | `curl -s -o /dev/null -w '%{http_code}' <地址>/api/health` 应为 200 |
+| 每天 | 监控端在线 | 概览页徽标：绿=在线、黄=心跳中断 1~10 分钟、红=离线超过 10 分钟 |
+| 每周 | 回调失败单 | 订单管理筛「回调失败」，逐条确认钱是否真到账，必要时手动补发 |
+| 每周 | 泄露门禁 | `pnpm check:leak` |
+| 每次改代码 | 全量自检 | `pnpm verify`（需 `pnpm dev` 在另一个终端运行） |
+| 每月 | 备份 D1 | 见下方备份命令，存到 `.data/`（已 gitignore） |
+| 每月 | 旧静态资源 | 每次部署会产生新的 hash 文件，旧的不会自动删；确认新版稳定后可手工清理 |
+| 每季度 | 依赖升级 | `pnpm outdated`，升级后跑 `pnpm verify` |
+
+备份线上库（**产物含真实数据，不要提交、不要上传**）：
+
+```bash
+pnpm exec wrangler d1 export vmq --remote --output ./.data/backup-$(date +%Y%m%d).sql -c "$(node scripts/cfg.mjs)"
+```
 
 ## 接口
 
