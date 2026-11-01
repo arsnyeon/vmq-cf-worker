@@ -25,15 +25,38 @@ export const PASSAGE_FIELDS = [
 /** 文本型字段（其余按数字存） */
 const TEXT_FIELDS = new Set<string>(['zf_pid', 'ewm', 'remarks']);
 
-const LIST_COLUMNS =
-  'id, type, code, zf_pid, ewm_type, ewm, balance, succcount, succprice, is_status, status, '
-  + 'money_change, pay_qf, create_time, run_time, remarks';
+/**
+ * 列表查询列。
+ *
+ * `succcount` / `succprice` **不再读表里的同名列**，改为从 orders 实时聚合。
+ *
+ * 原因：passages 表虽然有这两列，但**全仓没有任何地方写过它们** ——
+ * 既没有在下单时累加，也没有在收款回调里更新，所以恒为建表默认值 0，
+ * 界面上就出现「明明有订单和收款记录，收款笔数/金额却都是 0」。
+ *
+ * 为什么改成实时算而不是补写入逻辑：
+ *   1. 已有历史订单立刻就能统计对，不需要写迁移脚本回填；
+ *   2. 不存在「写入漏了某条路径」导致长期偏差的问题（比如回调重试、手动补单）；
+ *   3. 通道数量是几十条级别，配合 idx_orders_passage 索引，开销可以忽略。
+ *
+ * 口径与概览页保持一致：`status IN (1,2)` 都算钱已到账
+ *（1 = 回调成功，2 = 回调失败但款已收到），金额取实际收款额 truemoney。
+ * 金额用「分」做整数累加再除回元，避免 REAL 浮点累加误差（0.1+0.2 那类）。
+ */
+const LIST_COLUMNS = `
+  id, type, code, zf_pid, ewm_type, ewm, status,
+  money_change, pay_qf, create_time, remarks,
+  (SELECT COUNT(*) FROM orders o
+     WHERE o.passage_id = passages.id AND o.status IN (1, 2)) AS succcount,
+  (SELECT printf('%.2f', COALESCE(SUM(CAST(ROUND(o.truemoney * 100) AS INTEGER)), 0) / 100.0)
+     FROM orders o
+     WHERE o.passage_id = passages.id AND o.status IN (1, 2)) AS succprice
+`;
 
 export interface PassageListFilter {
   type?: number;
   code?: number;
   status?: number;
-  is_status?: number;
   /** 创建时间范围（unix 秒，含边界） */
   startTs?: number;
   endTs?: number;
@@ -57,7 +80,7 @@ export async function list(
 ): Promise<{ rows: PassageListRow[]; count: number }> {
   const where: string[] = [];
   const binds: unknown[] = [];
-  for (const k of ['type', 'code', 'status', 'is_status'] as const) {
+  for (const k of ['type', 'code', 'status'] as const) {
     const v = f[k];
     if (v !== undefined) {
       where.push(`${k} = ?`);

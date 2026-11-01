@@ -59,6 +59,8 @@ CREATE TABLE IF NOT EXISTS orders (
 CREATE INDEX IF NOT EXISTS idx_orders_match ON orders(truemoney, status, type, pid);
 CREATE UNIQUE INDEX IF NOT EXISTS idx_orders_out_trade_no ON orders(out_trade_no);
 CREATE INDEX IF NOT EXISTS idx_orders_status_time ON orders(status, create_time);
+-- 通道列表的「收款笔数/收款金额」按 passage_id + status 聚合，走这条索引
+CREATE INDEX IF NOT EXISTS idx_orders_passage ON orders(passage_id, status);
 
 -- 金额池：price 形如 "1800-1"（分-类型），主键即互斥锁
 CREATE TABLE IF NOT EXISTS tmp_price (

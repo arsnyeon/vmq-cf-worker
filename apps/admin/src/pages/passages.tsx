@@ -33,14 +33,13 @@ interface PassageRow {
   ewm_type: number;
   ewm: string;
   status: number;
-  is_status: number;
   remarks: string;
   zf_pid: string;
-  balance: string;
+  /** 累计收款笔数：由后端按 orders 实时聚合（status IN (1,2)） */
   succcount: number;
+  /** 累计收款金额，已格式化成两位小数字符串 */
   succprice: string;
   create_time: string;
-  run_time: string;
   app_config: string;
 }
 
@@ -97,7 +96,7 @@ export function PassagesPage() {
   const [page, setPage] = useState(1);
   // 与订单页一致：条件先填，点「搜索」才生效
   const EMPTY_FILTERS = {
-    start: '', end: '', type: '', code: '', zf_pid: '', is_status: '', status: '', remarks: '',
+    start: '', end: '', type: '', code: '', zf_pid: '', status: '', remarks: '',
   };
   const [draft, setDraft] = useState(EMPTY_FILTERS);
   const [filters, setFilters] = useState(EMPTY_FILTERS);
@@ -221,17 +220,6 @@ export function PassagesPage() {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        <Select value={draft.is_status || 'all'} onValueChange={(v) => setDraft((d) => ({ ...d, is_status: v === 'all' ? '' : v }))}>
-          <SelectTrigger className="w-40 whitespace-nowrap">
-            <SelectValue placeholder="在线状态" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">全部在线状态</SelectItem>
-            <SelectItem value="1">在线</SelectItem>
-            <SelectItem value="0">离线</SelectItem>
-          </SelectContent>
-        </Select>
-
         <Select value={draft.status || 'all'} onValueChange={(v) => setDraft((d) => ({ ...d, status: v === 'all' ? '' : v }))}>
           <SelectTrigger className="w-36 whitespace-nowrap">
             <SelectValue placeholder="状态" />
@@ -300,7 +288,7 @@ export function PassagesPage() {
       </Toolbar>
 
       <Panel>
-        <Table className="min-w-[1860px]">
+        <Table className="min-w-[1540px]">
           <TableHeader>
             <TableRow>
               <TableHead className="w-10">
@@ -316,15 +304,13 @@ export function PassagesPage() {
               <TableHead className="w-32">通道模式</TableHead>
               <TableHead className="w-28">支付用户ID</TableHead>
               <TableHead className="w-24">收款码类型</TableHead>
+              {/* APP 扫码配置紧跟在收款码类型之后：两者都是「这条通道怎么收款」的一部分 */}
+              <TableHead className="w-24">APP扫码配置</TableHead>
               <TableHead className="w-24">无金额收款码</TableHead>
-              <TableHead className="w-24 text-right">当前余额</TableHead>
               <TableHead className="w-20 text-right">收款笔数</TableHead>
               <TableHead className="w-24 text-right">收款金额</TableHead>
-              <TableHead className="w-20">在线状态</TableHead>
               <TableHead className="w-20">状态</TableHead>
               <TableHead className="w-36">添加时间</TableHead>
-              <TableHead className="w-36">监控运行时间</TableHead>
-              <TableHead className="w-24">APP扫码配置</TableHead>
               <TableHead className="w-40">APP手动配置</TableHead>
               <TableHead className="w-32">备注</TableHead>
               <TableHead className="sticky right-0 z-10 w-36 border-b border-l border-border bg-card text-right shadow-[-6px_0_8px_-8px_rgba(0,0,0,0.15)]">操作</TableHead>
@@ -332,11 +318,11 @@ export function PassagesPage() {
           </TableHeader>
           <TableBody>
             {query.isLoading ? (
-              <EmptyRow colSpan={18} text="加载中…" />
+              <EmptyRow colSpan={15} text="加载中…" />
             ) : query.error ? (
-              <EmptyRow colSpan={18} text={`加载失败：${String(query.error)}`} />
+              <EmptyRow colSpan={15} text={`加载失败：${String(query.error)}`} />
             ) : rows.length === 0 ? (
-              <EmptyRow colSpan={18} text="还没有通道，点「新增通道」" />
+              <EmptyRow colSpan={15} text="还没有通道，点「新增通道」" />
             ) : (
               rows.map((r) => (
                 <TableRow key={r.id} className="group">
@@ -360,6 +346,19 @@ export function PassagesPage() {
                     {Number(r.ewm_type) === 1 ? '赞赏码' : '二维码'}
                   </TableCell>
                   <TableCell>
+                    {r.app_config && Number(r.old_type) !== 3 ? (
+                      <button
+                        type="button"
+                        onClick={() => setQr({ src: qrSrc(r.app_config), title: `通道 #${r.id} · APP扫码配置` })}
+                        className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs hover:bg-muted"
+                      >
+                        <QrCode className="size-3.5" /> 查看
+                      </button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                  <TableCell>
                     {r.ewm ? (
                       <button
                         type="button"
@@ -372,16 +371,8 @@ export function PassagesPage() {
                       <span className="text-xs text-muted-foreground">—</span>
                     )}
                   </TableCell>
-                  <TableCell className="text-right tabular-nums">{r.balance || '0.00'}</TableCell>
                   <TableCell className="text-right tabular-nums">{r.succcount}</TableCell>
                   <TableCell className="text-right tabular-nums">{r.succprice}</TableCell>
-                  <TableCell>
-                    {Number(r.is_status) === 1 ? (
-                      <Badge variant="success">在线</Badge>
-                    ) : (
-                      <Badge variant="muted">离线</Badge>
-                    )}
-                  </TableCell>
                   <TableCell>
                     {r.status === 1 ? (
                       <Badge variant="success">开启</Badge>
@@ -391,22 +382,6 @@ export function PassagesPage() {
                   </TableCell>
                   <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
                     {r.create_time || '—'}
-                  </TableCell>
-                  <TableCell className="whitespace-nowrap text-xs text-muted-foreground">
-                    {r.run_time || '—'}
-                  </TableCell>
-                  <TableCell>
-                    {r.app_config && Number(r.old_type) !== 3 ? (
-                      <button
-                        type="button"
-                        onClick={() => setQr({ src: qrSrc(r.app_config), title: `通道 #${r.id} · APP扫码配置` })}
-                        className="inline-flex h-7 items-center gap-1 rounded-md border border-border px-2 text-xs hover:bg-muted"
-                      >
-                        <QrCode className="size-3.5" /> 查看
-                      </button>
-                    ) : (
-                      <span className="text-xs text-muted-foreground">—</span>
-                    )}
                   </TableCell>
                   <TableCell>
                     {r.app_config && Number(r.old_type) !== 3 ? (

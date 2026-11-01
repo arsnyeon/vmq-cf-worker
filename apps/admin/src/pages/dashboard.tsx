@@ -1,8 +1,18 @@
 import { useQuery } from '@tanstack/react-query';
-import { Activity, ArrowUpRight, CreditCard, ShoppingCart, Wallet } from 'lucide-react';
+import {
+  Activity,
+  AlertTriangle,
+  ArrowUpRight,
+  CreditCard,
+  ShoppingCart,
+  Wallet,
+  Wifi,
+  WifiOff,
+} from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { api, type Stats, type SystemInfo } from '@/lib/api';
+import { api, type MonitorState, type Stats, type SystemInfo } from '@/lib/api';
 
 /** 两列表格的一行：左标签右值 */
 function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
@@ -14,8 +24,59 @@ function InfoRow({ label, value }: { label: string; value: React.ReactNode }) {
   );
 }
 
-/** 关于本项目：静态信息，写死在前端（不占接口） */
-const ABOUT: Array<{ label: string; value: React.ReactNode }> = [
+/**
+ * 监控端状态的视觉规范。
+ *
+ * 三态用「图标 + 颜色 + 是否脉冲」三重区分，而不是只改文字颜色：
+ *   在线  emerald + Wifi          + 外圈脉冲（心跳还在跳）
+ *   异常  amber   + AlertTriangle （心跳断了但还在宽限期内，值得看一眼）
+ *   离线  red     + WifiOff       （长时间没心跳，订单不会被自动核对）
+ * 只靠颜色的话，色觉障碍用户和低亮度屏幕上很难分辨，所以图标形状也要能区分。
+ */
+const MONITOR_META: Record<
+  MonitorState,
+  { label: string; icon: typeof Wifi; badge: 'success' | 'warning' | 'danger'; dot: string; pulse: boolean }
+> = {
+  online: { label: '监控端在线', icon: Wifi, badge: 'success', dot: 'bg-emerald-500', pulse: true },
+  degraded: { label: '监控端异常', icon: AlertTriangle, badge: 'warning', dot: 'bg-amber-500', pulse: false },
+  offline: { label: '监控端离线', icon: WifiOff, badge: 'danger', dot: 'bg-red-500', pulse: false },
+};
+
+/** 老接口没有 monitorState 时按 online 布尔值退化，避免整页崩 */
+function resolveState(state?: MonitorState, online?: boolean): MonitorState {
+  return state ?? (online ? 'online' : 'offline');
+}
+
+/** 心跳年龄 → 人能读懂的话 */
+function heartAgeText(age?: number): string {
+  if (age === undefined || age < 0) return '从未收到心跳';
+  if (age < 60) return `${age} 秒前心跳`;
+  if (age < 3600) return `心跳中断 ${Math.floor(age / 60)} 分钟`;
+  if (age < 86400) return `心跳中断 ${Math.floor(age / 3600)} 小时`;
+  return `心跳中断 ${Math.floor(age / 86400)} 天`;
+}
+
+function MonitorBadge({ state, detail }: { state: MonitorState; detail?: string }) {
+  const m = MONITOR_META[state];
+  const Icon = m.icon;
+  return (
+    <span className="inline-flex flex-wrap items-center gap-2">
+      <Badge variant={m.badge} className="gap-1.5 py-1">
+        <span className="relative flex size-1.5">
+          {m.pulse ? (
+            <span className={`absolute inline-flex size-full animate-ping rounded-full opacity-75 ${m.dot}`} />
+          ) : null}
+          <span className={`relative inline-flex size-1.5 rounded-full ${m.dot}`} />
+        </span>
+        <Icon className="size-3" />
+        {m.label}
+      </Badge>
+      {detail ? <span className="text-xs text-muted-foreground">{detail}</span> : null}
+    </span>
+  );
+}
+
+/** 关于本项目：静态信息，写死在前端（不占接口） */const ABOUT: Array<{ label: string; value: React.ReactNode }> = [
   { label: '项目名称', value: 'V免签 · Cloudflare Workers 版' },
   {
     label: '仓库地址',
@@ -101,11 +162,14 @@ export function DashboardPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-lg font-medium">概览</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            状态：{data.online ? '监控端在线' : '监控端离线'}
-            <span className="mx-2 text-border">|</span>
-            每 15 秒自动刷新
-          </p>
+          <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted-foreground">
+            <MonitorBadge
+              state={resolveState(data.monitorState, data.online)}
+              detail={heartAgeText(data.heartAge)}
+            />
+            <span className="text-border">|</span>
+            <span>每 15 秒自动刷新</span>
+          </div>
         </div>
         <a
           href="/"
@@ -196,16 +260,10 @@ export function DashboardPage() {
                 <InfoRow
                   label="监控端"
                   value={
-                    <span className="inline-flex items-center gap-1.5">
-                      <span
-                        className={
-                          info.data.monitorOnline
-                            ? 'size-1.5 rounded-full bg-emerald-500'
-                            : 'size-1.5 rounded-full bg-muted-foreground/40'
-                        }
-                      />
-                      {info.data.monitor}
-                    </span>
+                    <MonitorBadge
+                      state={resolveState(info.data.monitorState, info.data.monitorOnline)}
+                      detail={info.data.monitor}
+                    />
                   }
                 />
                 <InfoRow label="静态资源" value={info.data.staticAssets} />

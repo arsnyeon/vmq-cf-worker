@@ -11,6 +11,31 @@ import * as repo from './stats.repository';
 const DAYS = 7;
 /** 监控端 60 秒内有心跳算在线（与订单的 require_online 判定同一个口径） */
 export const ONLINE_WINDOW = 60;
+/**
+ * 心跳中断多久算「异常」。
+ *
+ * 监控端每 30 秒左右上报一次，所以超过 ONLINE_WINDOW 就说明至少漏了一拍。
+ * 但一漏就报「离线」噪音太大（网络抖动、切后台一下都会漏），所以再给一个
+ * 宽限窗口：60s ~ 10min 之间算「异常」（还能救，去看看吧），
+ * 超过 10 分钟才判「离线」（基本可以确认监控端没在跑了）。
+ */
+export const DEGRADED_WINDOW = 600;
+
+export type MonitorState = 'online' | 'degraded' | 'offline';
+
+/**
+ * 心跳年龄（秒，-1 表示从未上报）→ 监控端状态。
+ *
+ * 放在后端算而不是前端各算一遍：概览页顶部徽标和「系统信息」里的监控端行
+ * 用的是两个不同接口，阈值若在前端重复实现，改一处忘一处就会出现
+ * 「上面显示在线、下面显示离线」的自相矛盾。
+ */
+export function monitorStateOf(age: number): MonitorState {
+  if (age < 0) return 'offline';
+  if (age <= ONLINE_WINDOW) return 'online';
+  if (age <= DEGRADED_WINDOW) return 'degraded';
+  return 'offline';
+}
 
 /**
  * 看板数据。
@@ -58,6 +83,8 @@ export async function dashboard(env: Env): Promise<ApiResult> {
 
   const heart = await repo.lastHeart(env.DB);
   const counts = await countByStatus(env.DB);
+  const heartAge = heart ? ts - heart : -1;
+  const state = monitorStateOf(heartAge);
 
   return okData(
     {
@@ -67,7 +94,10 @@ export async function dashboard(env: Env): Promise<ApiResult> {
       order2: today.c,
       chartData,
       // 下面几个是额外给的，方便 /api/stats 与调试
-      online: heart ? ts - heart <= ONLINE_WINDOW : false,
+      online: state === 'online',
+      // 心跳年龄与三态：前端据 monitorState 上色，据 heartAge 文案里显示「多久没心跳」
+      heartAge,
+      monitorState: state,
       pending: counts['0'] ?? 0,
       paid: counts['1'] ?? 0,
       notifyFailed: counts['2'] ?? 0,

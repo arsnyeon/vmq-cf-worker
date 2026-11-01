@@ -17,7 +17,7 @@ export async function listPassages(
   reqOrigin = ''
 ): Promise<ApiResult> {
   const { limit, offset } = pageArgs(p);
-  const num = (k: 'type' | 'code' | 'status' | 'is_status'): number | undefined => {
+  const num = (k: 'type' | 'code' | 'status'): number | undefined => {
     const v = filterVal(p, k);
     return v === '' ? undefined : Number(v);
   };
@@ -26,7 +26,6 @@ export async function listPassages(
     type: num('type'),
     code: num('code'),
     status: num('status'),
-    is_status: num('is_status'),
     startTs: dayTs(filterVal(p, 'start')),
     endTs: dayTs(filterVal(p, 'end'), true),
     zfPid: filterVal(p, 'zf_pid') || undefined,

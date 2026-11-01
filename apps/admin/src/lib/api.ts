@@ -112,6 +112,15 @@ export interface ChartData {
   order2: number[];
 }
 
+/**
+ * 监控端状态。
+ *   online   心跳新鲜（≤60s）
+ *   degraded 心跳中断但还在宽限期内（60s ~ 10min），先当异常提示
+ *   offline  长时间无心跳（>10min）或从未上报
+ * 阈值只在后端定义（stats.service.ts 的 monitorStateOf），前端只负责上色。
+ */
+export type MonitorState = 'online' | 'degraded' | 'offline';
+
 export interface Stats {
   income1: string;
   income2: string;
@@ -119,6 +128,9 @@ export interface Stats {
   order2: number;
   chartData: ChartData;
   online: boolean;
+  /** 距上次心跳的秒数；-1 = 从未收到过 */
+  heartAge?: number;
+  monitorState?: MonitorState;
   pending: number;
   paid: number;
   notifyFailed: number;
@@ -133,6 +145,8 @@ export interface SystemInfo {
   database: string;
   monitor: string;
   monitorOnline: boolean;
+  monitorState?: MonitorState;
+  heartAge?: number;
   staticAssets: string;
   uploadLimit: string;
   notifyJudge: string;

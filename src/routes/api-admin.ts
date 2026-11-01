@@ -38,7 +38,7 @@ import {
   setAdminStatus,
 } from '../modules/system/system.service';
 import { allConfig, profileOf } from '../modules/system/system.repository';
-import { dashboard, ONLINE_WINDOW } from '../modules/stats/stats.service';
+import { dashboard, monitorStateOf } from '../modules/stats/stats.service';
 import * as statsRepo from '../modules/stats/stats.repository';
 import { saveUpload } from '../modules/uploads/upload.service';
 import { notifyJudgeLabel } from '../modules/shared/labels';
@@ -154,7 +154,9 @@ export async function handleAdminApi(req: Request, env: Env, sub: string): Promi
     const heart = await statsRepo.lastHeart(env.DB);
     const ts = Math.floor(Date.now() / 1000);
     const age = heart ? ts - heart : -1;
-    const online = age >= 0 && age <= ONLINE_WINDOW;
+    // 与 /stats 共用同一套阈值，避免两处判定不一致
+    const state = monitorStateOf(age);
+    const online = state === 'online';
 
     return reply(
       okData({
@@ -162,13 +164,18 @@ export async function handleAdminApi(req: Request, env: Env, sub: string): Promi
         siteAddress: siteHost(cfg, req),
         runPlatform: 'Cloudflare Workers · workerd',
         database: 'D1 (SQLite) · APAC',
+        // 只给「细节」，状态词由前端的徽标承担（否则会出现「监控端在线 · 在线 · 32 秒前心跳」的重复）
         monitor:
           age < 0
-            ? '未连接'
-            : online
-              ? `在线 · ${age} 秒前心跳`
-              : `离线 · 最后心跳 ${fmtTime(heart)}`,
+            ? '从未收到心跳'
+            : state === 'online'
+              ? `${age} 秒前心跳`
+              : state === 'degraded'
+                ? `心跳中断 ${Math.floor(age / 60)} 分钟`
+                : `最后心跳 ${fmtTime(heart)}`,
         monitorOnline: online,
+        monitorState: state,
+        heartAge: age,
         staticAssets: STATIC_ASSETS_LABEL,
         uploadLimit: `${MAX_UPLOAD_LABEL} · ${UPLOAD_MIME_LABEL}`,
         notifyJudge: notifyJudgeLabel(cfg['notify_success_body'] ?? '@json:code=1'),
