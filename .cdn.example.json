@@ -1,9 +1,14 @@
 {
   "_comment": "静态资源 CDN 目标。复制成 .cdn.local.json 后填真实值——后者已被 .gitignore 排除，不要提交。",
-  "_comment2": "bucket / prefix / region 对应 ossutil 的 oss://<bucket>/<prefix>/；cdnBase 是浏览器实际访问的前缀（末尾不带斜杠）。",
+  "_comment2": "prefix 是 OSS 上的对象前缀（两个桶里相同）；cdnBase 是浏览器实际访问的前缀（末尾不带斜杠）。",
 
-  "bucket": "your-bucket-name",
   "prefix": "path/to/static/root",
-  "region": "cn-hangzhou",
-  "cdnBase": "https://cdn.example.com/path/to/static/root"
+  "cdnBase": "https://cdn.example.com/path/to/static/root",
+
+  "_comment3": "targets 按顺序上传。多个桶时：先传「同步源」，再传「CDN 回源桶」——",
+  "_comment4": "因为定时同步是「以源桶为准覆盖回源桶」，只传回源桶会在下次同步被回滚。",
+  "targets": [
+    { "bucket": "your-source-bucket", "region": "ap-southeast-1", "note": "同步源（最先传）" },
+    { "bucket": "your-cdn-origin-bucket", "region": "cn-shanghai", "note": "CDN 回源（最后传，保证立即可用）" }
+  ]
 }

@@ -16,6 +16,13 @@
  * 反过来的话，Worker 已经引用新 hash，而文件还没传上去，会出现一段 404 窗口
  *（例如后台白屏、CSS 正常但 JS 加载失败）。
  *
+ * 为什么可能配了「两个桶」：部署可能同时使用同步源桶和 CDN 回源桶，由外部同步
+ * 任务保持内容一致，**以源桶为准覆盖回源桶的同名文件**，
+ * 但不删除回源桶独有的文件。所以：
+ *   · 只传回源桶 → 立即可用，但源桶若有同名旧文件，下次同步会覆盖回去
+ *   · 只传源桶   → 内容不会回滚，但要等 1-3 分钟同步后才生效
+ *   · 两个都传   → 既不会被回滚，又立即可用（本脚本的默认做法，多花 2 秒）
+ *
  * 用法：
  *   pnpm cdn:sync            上传 + 校验
  *   pnpm cdn:sync --dry-run  只打印将要上传的内容，不真传
@@ -78,11 +85,23 @@ function loadConfig() {
   } catch (e) {
     die(`解析 ${CONFIG_FILE} 失败：${e.message}`);
   }
-  for (const k of ['bucket', 'prefix', 'region', 'cdnBase']) {
+  for (const k of ['prefix', 'cdnBase']) {
     if (!cfg[k]) die(`${CONFIG_FILE} 缺少字段 "${k}"`);
   }
   cfg.prefix = String(cfg.prefix).replace(/^\/+|\/+$/g, '');
   cfg.cdnBase = String(cfg.cdnBase).replace(/\/+$/, '');
+
+  // 兼容单桶老格式（顶层直接写 bucket / region）
+  if (!Array.isArray(cfg.targets) || !cfg.targets.length) {
+    if (!cfg.bucket || !cfg.region) {
+      die(`${CONFIG_FILE} 缺少 targets（或 bucket + region）`);
+    }
+    cfg.targets = [{ bucket: cfg.bucket, region: cfg.region }];
+  }
+  for (const [i, t] of cfg.targets.entries()) {
+    if (!t.bucket) die(`targets[${i}] 缺少 bucket`);
+    if (!t.region) die(`targets[${i}] 缺少 region`);
+  }
   return cfg;
 }
 
@@ -103,14 +122,14 @@ function checkOssutil() {
 }
 
 /** 跑一次 ossutil cp -r -f，返回 { ok, objects, bytes, output } */
-function uploadDir(cfg, dir) {
+function uploadDir(prefix, target, dir) {
   const src = join(ROOT, 'public', dir);
   if (!existsSync(src)) {
     return { ok: false, objects: 0, bytes: 0, output: `本地目录不存在：public/${dir}（先 pnpm admin:build && pnpm web:build）` };
   }
 
-  const dst = `oss://${cfg.bucket}/${cfg.prefix}/${dir}/`;
-  const argv = ['cp', '-r', '-f', src, dst, '--region', cfg.region, '--output-dir', OUTPUT_DIR];
+  const dst = `oss://${target.bucket}/${prefix}/${dir}/`;
+  const argv = ['cp', '-r', '-f', src, dst, '--region', target.region, '--output-dir', OUTPUT_DIR];
   for (const e of EXCLUDES) argv.push('--exclude', e);
   if (DRY_RUN) argv.push('--dry-run');
 
@@ -180,32 +199,34 @@ async function main() {
 
   console.log(`\n静态资源同步${DRY_RUN ? '（dry-run，不真传）' : ''}`);
   console.log(`  ossutil  ${ver}`);
-  console.log(`  目标     oss://${cfg.bucket}/${cfg.prefix}/{${DIRS.join(',')}}/`);
-  console.log(`  区域     ${cfg.region}`);
+  console.log(`  路径     ${cfg.prefix}/{${DIRS.join(',')}}/`);
   console.log(`  排除     ${EXCLUDES.join(', ')}`);
-  console.log('');
+  console.log(`  目标     ${cfg.targets.length} 个桶（按顺序上传）`);
 
   let totalObjects = 0;
   let totalBytes = 0;
   const failures = [];
 
-  for (const dir of DIRS) {
-    process.stdout.write(`  ${dir.padEnd(8)} `);
-    const r = uploadDir(cfg, dir);
-    if (r.ok) {
-      totalObjects += r.objects;
-      totalBytes += r.bytes;
-      console.log(`✓ ${String(r.objects).padStart(3)} 个对象  ${fmtBytes(r.bytes)}`);
-    } else {
-      failures.push({ dir, output: r.output });
-      console.log('✗ 失败');
+  for (const target of cfg.targets) {
+    console.log(`\n  oss://${target.bucket}  (${target.region})${target.note ? `  ${target.note}` : ''}`);
+    for (const dir of DIRS) {
+      process.stdout.write(`    ${dir.padEnd(8)} `);
+      const r = uploadDir(cfg.prefix, target, dir);
+      if (r.ok) {
+        totalObjects += r.objects;
+        totalBytes += r.bytes;
+        console.log(`✓ ${String(r.objects).padStart(3)} 个对象  ${fmtBytes(r.bytes)}`);
+      } else {
+        failures.push({ where: `${target.bucket}/${dir}`, output: r.output });
+        console.log('✗ 失败');
+      }
     }
   }
 
   if (failures.length) {
     console.error('\n上传失败：');
-    for (const f of failures) console.error(`\n  [${f.dir}]\n  ${f.output.replace(/\n/g, '\n  ')}`);
-    die(`${failures.length} 个目录上传失败，已中断（不要在这种状态下 deploy）`);
+    for (const f of failures) console.error(`\n  [${f.where}]\n  ${f.output.replace(/\n/g, '\n  ')}`);
+    die(`${failures.length} 处上传失败，已中断（不要在这种状态下 deploy）`);
   }
 
   console.log(`\n  合计     ${totalObjects} 个对象  ${fmtBytes(totalBytes)}`);
