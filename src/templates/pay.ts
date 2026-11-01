@@ -17,8 +17,8 @@ interface PayPageOptions {
 const PAYMENT: Record<number, { label: string; logo: string; w: number; h: number }> = {
   1: { label: '微信支付', logo: 'wxpay-text.png', w: 136, h: 40 },
   2: { label: '支付宝', logo: 'alipay-text.png', w: 104, h: 40 },
-  3: { label: 'QQ 钱包', logo: 'qqpay.jpg', w: 138, h: 40 },
-  4: { label: '数字人民币', logo: 'rmbpay.jpg', w: 137, h: 40 },
+  3: { label: 'QQ 钱包', logo: 'qqpay.png', w: 138, h: 40 },
+  4: { label: '数字人民币', logo: 'rmbpay.png', w: 137, h: 40 },
 };
 
 function esc(value: string): string {

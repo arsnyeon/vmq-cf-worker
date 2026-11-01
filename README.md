@@ -34,7 +34,8 @@
 
 ### 0. 前置
 
-- [Node.js](https://nodejs.org/) 20+（package.json 的 engines 要求）
+- [Node.js](https://nodejs.org/) 22.15+
+- [pnpm](https://pnpm.io/installation) 9+（`corepack enable` 即可；仓库已用 `packageManager` 锁定版本）
 - [Cloudflare 账号](https://dash.cloudflare.com/sign-up)（免费即可）
 - [Wrangler CLI](https://developers.cloudflare.com/workers/wrangler/install-update/)：`npm i -g wrangler`
 - 一个监控端 App（见「监控端」一节）
@@ -47,8 +48,8 @@ wrangler login
 
 ```bash
 git clone https://github.com/im-webb/vmq-cf-worker.git
-cd vmq-worker
-pnpm install     # 或 npm install
+cd vmq-cf-worker
+pnpm install
 ```
 
 ### 2. 创建 D1 数据库
@@ -112,7 +113,7 @@ pnpm run deploy
 
 提交后直接跳到登录页 `/<别名>/login`，用刚设置的账号登录即可。
 
-通讯密钥在安装时自动生成（32 位十六进制），之后可以在后台「系统配置 → 密钥管理」确认——为了安全，页面只展示前 6 位和长度（如 `a1b2c3…（32 位）`），不展示原值；填新值保存才会覆盖，留空保存表示保持不变。
+通讯密钥在安装时自动生成（32 位十六进制），之后可以在后台「系统配置 → 密钥管理」查看并复制完整值；填新值保存才会覆盖，留空保存表示保持不变。它是后台管理员和商户、监控端共用的敏感信息，请勿泄露。
 
 初始化完成后 `/setup` 自动关闭（再次访问返回 404）。
 
@@ -195,10 +196,10 @@ money, really_money, name, sitename, sign, sign_type=MD5
 
 验签规则与下单一致。**返回什么算成功**取决于后台「回调成功判定」：
 
-| 取值              | 判定                             |
-| ----------------- | -------------------------------- |
-| `success`         | 响应体去空白后等于 success       |
-| `@any2xx`         | 只看 HTTP 状态码 2xx             |
+| 取值                   | 判定                             |
+| ---------------------- | -------------------------------- |
+| `success`              | 响应体去空白后等于 success       |
+| `@any2xx`              | 只看 HTTP 状态码 2xx             |
 | `@json:code=1`（默认） | 响应体是 JSON 且 `code` 字段为 1 |
 
 失败会按 30s → 2m → 10m → 1h → 6h 退避重试，最多 8 次。
@@ -245,10 +246,21 @@ DELETE FROM admins;
 ## 本地开发
 
 ```bash
-pnpm dev           # 本地起服务（D1 用本地模拟库）
-pnpm test          # 类型 + 模板渲染 + 签名 + 二维码解码 + 路由，全量自检
-pnpm check:leak    # 提交前自检：确认没把真实域名 / 密钥写进仓库
+pnpm db:local            # 首次：初始化本地 D1 模拟库
+pnpm dev                 # 本地起服务（另一个终端保持运行）
+pnpm test                # 类型 + 模板渲染 + 签名 + 二维码解码 + 路由 + HTTP 冒烟，全量自检
+pnpm check:leak          # 泄露门禁：工作区 + 全部 Git 历史 + 提交说明
+pnpm check:leak:worktree # 只查可发布的工作区文件（更快）
+pnpm check:leak:history  # 只查历史 blob 与提交信息
 ```
+
+> `pnpm test` / `pnpm verify` 里的 `test:http`、`test:api` 会直接请求
+> `http://localhost:8787`，不会自己起服务：先跑 `pnpm db:local`，并在另一个终端保持 `pnpm dev`。
+
+泄露门禁会把命中内容脱敏后输出。真实域名 / 账号 / 姓名等私有值写在
+`.private-rules.json`（已在 `.gitignore` 中，模板见 `.private-rules.example.json`）；
+确认是测试假值时，可在同一行加 `check-leak-ignore` 注释。它只扫描 Git 可达历史，
+不会读取 `wrangler.local.jsonc`、`seed.local.sql` 等被忽略的本地文件。
 
 本地库初始化：
 
@@ -272,9 +284,9 @@ wrangler.example.jsonc  配置模板（复制成 wrangler.local.jsonc 再填）
 
 ## 许可与致谢
 
-- 本项目全部代码（Worker、前台、后台 SPA、支付页）以 **MIT** 发布，见 [LICENSE](./LICENSE)
-- `public/static/pay/3/img/` 下是微信 / 支付宝 / QQ / 数字人民币的官方标识，
-  仅用于标示支付方式，商标权归各自权利人
-- 仓库不包含任何第三方页面模板或后台 UI 框架
+- 本项目代码以 **MIT** 发布，见 [LICENSE](./LICENSE)；上游、UI 组件与依赖的完整版权声明见 [THIRD_PARTY_NOTICES.md](./THIRD_PARTY_NOTICES.md)
+- 本项目是 [V免签（vmqphp）](https://github.com/szvone/vmqphp) 的 TypeScript / Cloudflare Workers 重写，上游以 MIT 发布（Copyright © 2019 vone）
+- 后台部分 UI 组件改编自 [shadcn/ui](https://github.com/shadcn-ui/ui)（MIT，Copyright © 2023 shadcn）
+- 微信 / 支付宝 / QQ / 数字人民币标识仅用于标示支付方式，商标权归各自权利人，不适用 MIT
 
 > 仅供个人学习与自用。请遵守当地法律法规与合作平台的服务条款，不要用于违法用途。

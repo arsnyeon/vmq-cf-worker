@@ -1,0 +1,4 @@
+{
+  "_comment": "复制成 .private-rules.json（已在 .gitignore 中）后填入真实值。这些值会被 check:leak 当作泄露关键词；输出只显示规则编号，不会回显具体内容。",
+  "leakLiterals": ["your-domain.example", "your-account-id", "your-real-name"]
+}

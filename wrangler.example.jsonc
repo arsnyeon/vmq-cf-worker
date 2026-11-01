@@ -13,7 +13,8 @@
   // 静态资源（CSS/JS/图片/字体）随 Worker 一起发布：
   //   - /static/* 由 Cloudflare 边缘直接从 assets 分发，不占 Worker 脚本体积
   //   - 限额：20,000 个文件 / 单文件 25 MiB（免费版够用）
-  //   - 换了前端素材后先 `pnpm sync:assets`（deploy 时会自动跑）
+  //   - 换了前端素材后重跑 `pnpm admin:build` / `pnpm web:build`（`pnpm run deploy` 会自动做）
+  //   - 走外部 CDN 时，再用 `pnpm cdn:sync` 上传并校验
   "assets": {
     "directory": "./public",
     "binding": "ASSETS",
