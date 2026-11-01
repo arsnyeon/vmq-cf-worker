@@ -29,6 +29,8 @@
     "admin": "node scripts/reset-admin.mjs",
     "test:alias": "node --experimental-strip-types test/alias.check.mjs",
     "check:leak": "node scripts/check-leak.mjs",
+    "cdn:sync": "node scripts/cdn-sync.mjs",
+    "cdn:dry": "node scripts/cdn-sync.mjs --dry-run",
     "test:api": "node test/api.admin.check.mjs",
     "admin:dev": "pnpm --filter @vmq/admin dev",
     "admin:build": "pnpm --filter @vmq/admin build",

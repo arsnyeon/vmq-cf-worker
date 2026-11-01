@@ -221,8 +221,8 @@ export async function handleSetup(req: Request, env: Env): Promise<Response> {
   const adminSecret = have.get('admin_secret') || randHex(16); // 会话/验证码签名
   const cronKey = have.get('cron_key') || randHex(16); // 兼容旧版的"监控密钥"字段
   // 商户 ID（pid）：商户下单时必传、且要写进回调，但服务端不做比对，本质上是个
-  // 约定值的凭证。以前留空让用户自己编，现在装的时候就生成一个 10 位数字
-  //（和旧部署手填的形态一致：7000000000），后台「密钥管理」里直接显示、可复制。
+  // 约定值的凭证。以前留空让用户自己编，现在装的时候就生成一个 10 位数字，
+  // 后台「密钥管理」里直接显示、可复制。
   const epayId = have.get('epayid_ali') || String(Math.floor(1e9 + Math.random() * 9e9));
   // 对外域名：监控端扫码配置、支付网关地址都用它；认 X-Forwarded-Host，
   // 反代场景下不会把 Worker 自己的域名写进去。

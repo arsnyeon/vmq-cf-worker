@@ -18,6 +18,12 @@ seed.local.sql
 # 泄露检查 / 模板脱敏用的私有规则（含真实域名）
 .private-rules.json
 
+# 静态资源 CDN 目标（含真实 bucket / 域名，模板见 .cdn.example.json）
+.cdn.local.json
+
+# ossutil 批量操作的报告目录（cdn:sync 已改指临时目录，这是手工执行时的兜底）
+ossutil_output/
+
 # React 构建产物（apps/admin / apps/web 生成）
 public/console
 public/site

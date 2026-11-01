@@ -20,6 +20,8 @@ const SKIP_FILE = new Set([
   'pnpm-lock.yaml',
   'package-lock.json',
   '.private-rules.json',
+  // CDN 目标配置：存真实 bucket / 域名，本身就在 .gitignore 里，扫描它没有意义
+  '.cdn.local.json',
 ]);
 
 /** 通用规则：只有"形状"，不含真实值 */
