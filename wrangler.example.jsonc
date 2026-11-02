@@ -54,8 +54,8 @@
   "vars": {},
 
   // 部署前必读：
-  // 1) 监控端 App 请求的是 http://<host>/appPush，协议写死 http。
-  //    若用自定义域名，务必【不要】开启 Always Use HTTPS，否则 POST 会被 302 丢 body。
+  // 1) 监控端 App 固定请求 https://<host>/appPush，不支持明文降级。
+  //    自定义域名走 Cloudflare 默认证书即可；Always Use HTTPS 可以正常开启。
   // 2) 绑定自定义域名：加 routes: [{ "pattern": "pay.example.com/*", "custom_domain": true }]
   // 3) 密钥类配置不要写在这里，用 `wrangler secret put`。
   // 4) 想防别人抢先初始化，部署后立刻设 SETUP_TOKEN，再用 /setup?token=… 打开。
